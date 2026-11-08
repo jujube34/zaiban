@@ -203,6 +203,7 @@ export default function App() {
     const { views, errors } = await loadProjectViews(handle, meta)
     setWorkspace(meta)
     setProjects(views)
+    setExpandedFolders(new Set(views.map((view) => view.folder)))
     setSaveState('saved')
     setBoot('ready')
     setAddProjectsOpen(false)
@@ -354,6 +355,7 @@ export default function App() {
       const { views, errors } = await loadProjectViews(root, meta)
       setWorkspace(meta)
       setProjects(views)
+      setExpandedFolders(new Set(views.map((view) => view.folder)))
       setSaveState('saved')
       showToast('已从磁盘重新读取', 'success')
       if (errors.length > 0) showToast(`${errors.length} 个项目需要检查`, 'error')
@@ -451,6 +453,11 @@ export default function App() {
             (project) => !newViews.some((view) => view.folder === project.folder),
           )
           return [...fresh, ...newViews]
+        })
+        setExpandedFolders((current) => {
+          const next = new Set(current)
+          for (const view of newViews) next.add(view.folder)
+          return next
         })
         setSaveState('saved')
         if (failed.length > 0) {
