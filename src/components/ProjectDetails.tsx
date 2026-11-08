@@ -358,7 +358,6 @@ export function ProjectDetails({
             <section className="details-section">
               <div className="section-heading">
                 <h2>全部笔记</h2>
-                <span>{project.data.notes.length} 条</span>
               </div>
               {project.data.notes.length > 0 && (
                 <div className="note-list">
