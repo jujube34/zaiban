@@ -1466,39 +1466,6 @@ kbd {
   margin-bottom: 0;
 }
 
-.project-details__meta {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-  padding-top: 10px;
-  border-top: 1px solid #e3ddd0;
-}
-
-.project-details__meta > div {
-  display: flex;
-  align-items: flex-start;
-  gap: 9px;
-  min-width: 0;
-  color: var(--text);
-  font-size: 13px;
-  line-height: 1.55;
-}
-
-.project-details__meta > div > span:first-child {
-  width: 66px;
-  flex: none;
-  color: var(--text);
-  white-space: nowrap;
-}
-
-.project-details__meta code {
-  min-width: 0;
-  color: var(--text);
-  font-family: var(--font-mono);
-  font-size: 12.5px;
-  overflow-wrap: anywhere;
-}
-
 .project-details__footer {
   display: flex;
   flex-direction: column;
@@ -3578,10 +3545,6 @@ kbd {
 
   .project-details__side {
     gap: 12px;
-  }
-
-  .project-details__meta {
-    padding-top: 8px;
   }
 
   .project-details__footer {

@@ -23,7 +23,7 @@ import type {
   ProjectReference,
   ProjectView,
 } from '../types'
-import { fullDate, noteStamp } from '../lib/format'
+import { noteStamp } from '../lib/format'
 import { fileIconFor } from '../lib/files'
 import { getProjectStoredFile, makeId } from '../lib/fs'
 import { formatFolderPath } from '../lib/paths'
@@ -359,23 +359,6 @@ export function ProjectDetails({
             </div>
           )}
         </section>
-
-        <div className="project-details__meta">
-          <div>
-            <span>完整路径</span>
-            <code title={formatFolderPath(project.folder, ' / ')}>
-              {formatFolderPath(project.folder, ' / ')}
-            </code>
-          </div>
-          <div>
-            <span>记录文件</span>
-            <code>.prjm/project.json</code>
-          </div>
-          <div>
-            <span>创建于</span>
-            <span>{fullDate(project.data.createdAt)}</span>
-          </div>
-        </div>
 
         <div className="project-details__footer">
           <button type="button" className="text-button text-button--danger" onClick={onStopTracking}>
