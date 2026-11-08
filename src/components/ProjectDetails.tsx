@@ -13,8 +13,10 @@ import {
   useRef,
   useState,
   type ClipboardEvent,
+  type CSSProperties,
   type DragEvent,
   type KeyboardEvent,
+  type PointerEvent as ReactPointerEvent,
 } from 'react'
 import type {
   DraftNoteImage,
@@ -32,6 +34,8 @@ import { ResizableImage } from './ResizableImage'
 interface ProjectDetailsProps {
   project: ProjectView
   saving: boolean
+  sideWidth: number
+  onSideWidthChange: (width: number) => void
   onAddNote: (body: string, images: DraftNoteImage[]) => Promise<boolean>
   onEditNote: (noteId: string, body: string) => Promise<boolean>
   onDeleteNote: (note: ProjectNote) => void
@@ -42,6 +46,11 @@ interface ProjectDetailsProps {
   onStopTracking: () => void
 }
 
+const SPLITTER_MIN = 240
+const SPLITTER_MAX = 560
+const SPLITTER_DEFAULT = 330
+const SPLITTER_WIDTH = 24
+
 function isEdited(note: ProjectNote): boolean {
   return new Date(note.updatedAt).getTime() - new Date(note.createdAt).getTime() > 1000
 }
@@ -49,6 +58,8 @@ function isEdited(note: ProjectNote): boolean {
 export function ProjectDetails({
   project,
   saving,
+  sideWidth,
+  onSideWidthChange,
   onAddNote,
   onEditNote,
   onDeleteNote,
@@ -63,11 +74,22 @@ export function ProjectDetails({
   const [dragging, setDragging] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [removingRef, setRemovingRef] = useState<string | null>(null)
+  const detailsRef = useRef<HTMLElement>(null)
   const composerRef = useRef<HTMLTextAreaElement>(null)
   const imageUrls = useRef<Set<string>>(new Set())
   const dragDepth = useRef(0)
+  const splitterCleanup = useRef<(() => void) | null>(null)
   const isBroken = Boolean(project.missing || project.loadError)
   const hasContent = draft.trim().length > 0 || draftImages.length > 0
+
+  useEffect(
+    () => () => {
+      splitterCleanup.current?.()
+      document.body.style.cursor = ''
+      document.body.style.userSelect = ''
+    },
+    [],
+  )
 
   useEffect(() => {
     const textarea = composerRef.current
@@ -199,6 +221,66 @@ export function ProjectDetails({
     addImages(event.dataTransfer.files)
   }
 
+  const splitterBounds = () => {
+    const details = detailsRef.current
+    if (!details) return { min: SPLITTER_MIN, max: SPLITTER_MAX }
+    const styles = getComputedStyle(details)
+    const innerWidth =
+      details.clientWidth -
+      parseFloat(styles.paddingLeft || '0') -
+      parseFloat(styles.paddingRight || '0')
+    const max = Math.max(
+      SPLITTER_MIN,
+      Math.min(SPLITTER_MAX, innerWidth - SPLITTER_WIDTH - 340),
+    )
+    return { min: SPLITTER_MIN, max }
+  }
+
+  const beginSplitterResize = (event: ReactPointerEvent<HTMLDivElement>) => {
+    event.preventDefault()
+    event.stopPropagation()
+    splitterCleanup.current?.()
+
+    const startX = event.clientX
+    const startWidth = sideWidth
+    const { min, max } = splitterBounds()
+    document.body.style.cursor = 'col-resize'
+    document.body.style.userSelect = 'none'
+
+    const handleMove = (moveEvent: globalThis.PointerEvent) => {
+      moveEvent.preventDefault()
+      const next = Math.min(max, Math.max(min, startWidth + startX - moveEvent.clientX))
+      onSideWidthChange(Math.round(next))
+    }
+
+    const finish = () => {
+      window.removeEventListener('pointermove', handleMove)
+      window.removeEventListener('pointerup', finish)
+      window.removeEventListener('pointercancel', finish)
+      document.body.style.cursor = ''
+      document.body.style.userSelect = ''
+      splitterCleanup.current = null
+    }
+
+    splitterCleanup.current = finish
+    window.addEventListener('pointermove', handleMove, { passive: false })
+    window.addEventListener('pointerup', finish)
+    window.addEventListener('pointercancel', finish)
+  }
+
+  const handleSplitterKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    const { min, max } = splitterBounds()
+    const step = event.shiftKey ? 40 : 16
+    let next: number | null = null
+    if (event.key === 'ArrowLeft') next = sideWidth + step
+    if (event.key === 'ArrowRight') next = sideWidth - step
+    if (event.key === 'Home') next = min
+    if (event.key === 'End') next = max
+    if (next === null) return
+    event.preventDefault()
+    onSideWidthChange(Math.round(Math.min(max, Math.max(min, next))))
+  }
+
   const removeReference = async (reference: ProjectReference) => {
     if (removingRef) return
     setRemovingRef(reference.id)
@@ -211,7 +293,9 @@ export function ProjectDetails({
 
   return (
     <section
+      ref={detailsRef}
       className={`project-details ${isBroken ? 'project-details--broken' : ''}`}
+      style={{ '--details-side-width': `${sideWidth}px` } as CSSProperties}
       aria-label={`${formatFolderPath(project.folder, ' / ')} 的笔记与重点文件`}
     >
       <div className="project-details__main">
@@ -305,6 +389,20 @@ export function ProjectDetails({
           </>
         )}
       </div>
+
+      <div
+        className="project-details__splitter"
+        role="separator"
+        aria-label="调整笔记与重点文件列宽"
+        aria-orientation="vertical"
+        aria-valuemin={SPLITTER_MIN}
+        aria-valuemax={SPLITTER_MAX}
+        aria-valuenow={Math.round(sideWidth)}
+        tabIndex={0}
+        onPointerDown={beginSplitterResize}
+        onKeyDown={handleSplitterKeyDown}
+        onDoubleClick={() => onSideWidthChange(SPLITTER_DEFAULT)}
+      />
 
       <aside className="project-details__side">
         <section className="details-section details-section--files">

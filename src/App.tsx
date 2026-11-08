@@ -144,6 +144,20 @@ export default function App() {
   const [saveState, setSaveState] = useState<SaveState>('idle')
   const [addProjectsOpen, setAddProjectsOpen] = useState(false)
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(() => new Set())
+  const [detailsSideWidth, setDetailsSideWidth] = useState(() => {
+    try {
+      const raw = window.localStorage.getItem('prjm.detailsSideWidth')
+      if (raw !== null) {
+        const parsed = Number(raw)
+        if (Number.isFinite(parsed)) {
+          return Math.min(560, Math.max(240, Math.round(parsed)))
+        }
+      }
+    } catch {
+      // Local storage is optional.
+    }
+    return 330
+  })
   const [folderState, setFolderState] = useState<FolderState | null>(null)
   const [previewState, setPreviewState] = useState<PreviewState | null>(null)
   const [confirmSpec, setConfirmSpec] = useState<ConfirmSpec | null>(null)
@@ -209,6 +223,14 @@ export default function App() {
     },
     [enterWorkspace, showToast],
   )
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem('prjm.detailsSideWidth', String(detailsSideWidth))
+    } catch {
+      // Local storage is optional.
+    }
+  }, [detailsSideWidth])
 
   useEffect(() => {
     if (!supportsFileSystemAccess()) {
@@ -604,10 +626,9 @@ export default function App() {
         references: project.data.references.filter((item) => item.path !== reference.path),
         updatedAt: nowIso(),
       }
-      const success = await persistProject(project, next)
-      if (success) showToast(`已取消固定「${reference.name}」`, 'success')
+      await persistProject(project, next)
     },
-    [persistProject, showToast],
+    [persistProject],
   )
 
   const togglePin = useCallback(
@@ -628,10 +649,9 @@ export default function App() {
         references: [reference, ...project.data.references],
         updatedAt: nowIso(),
       }
-      const success = await persistProject(project, next)
-      if (success) showToast(`已固定「${name}」`, 'success')
+      await persistProject(project, next)
     },
-    [persistProject, removeReference, showToast],
+    [persistProject, removeReference],
   )
 
   const stopTracking = useCallback(
@@ -871,6 +891,8 @@ export default function App() {
                       <ProjectDetails
                         project={project}
                         saving={saveState === 'saving'}
+                        sideWidth={detailsSideWidth}
+                        onSideWidthChange={(width) => setDetailsSideWidth(width)}
                         onAddNote={(body, images) => addNote(project, body, images)}
                         onEditNote={(noteId, body) => editNote(project, noteId, body)}
                         onDeleteNote={(note) => requestDeleteNote(project, note)}

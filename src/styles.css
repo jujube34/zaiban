@@ -1422,12 +1422,41 @@ kbd {
 /* 行内项目详情 */
 .project-details {
   display: grid;
-  grid-template-columns: minmax(0, 1.5fr) minmax(245px, 0.55fr);
-  gap: clamp(20px, 2.6vw, 36px);
+  grid-template-columns: minmax(0, 1fr) 24px var(--details-side-width, 330px);
+  gap: 0;
   padding: 4px 8px 16px 50px;
   border-bottom: 1px solid var(--line);
   background: rgba(248, 245, 237, 0.72);
   animation: details-in 190ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+.project-details__splitter {
+  position: relative;
+  align-self: stretch;
+  min-height: 100%;
+  cursor: col-resize;
+  touch-action: none;
+  outline: none;
+}
+
+.project-details__splitter::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 1px;
+  transform: translateX(-50%);
+  background: var(--line-strong);
+  transition:
+    width 120ms ease,
+    background 120ms ease;
+}
+
+.project-details__splitter:hover::before,
+.project-details__splitter:focus-visible::before {
+  width: 2px;
+  background: #96a890;
 }
 
 @keyframes details-in {
@@ -3279,6 +3308,10 @@ kbd {
     grid-template-columns: minmax(0, 1fr);
     gap: 16px;
     padding: 3px 6px 14px 48px;
+  }
+
+  .project-details__splitter {
+    display: none;
   }
 
   .project-details__side {
