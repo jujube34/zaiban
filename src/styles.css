@@ -1025,6 +1025,20 @@ kbd {
   background: #ddd6c8;
 }
 
+.sort-control {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex: none;
+}
+
+.sort-label {
+  color: var(--text);
+  font-size: 14.5px;
+  font-weight: 550;
+  white-space: nowrap;
+}
+
 .sort-switch {
   display: flex;
   align-items: center;
@@ -3460,9 +3474,12 @@ kbd {
     display: none;
   }
 
+  .sort-control {
+    align-self: flex-start;
+  }
+
   .sort-switch {
     height: 32px;
-    align-self: flex-start;
   }
 
   .project-ledger {

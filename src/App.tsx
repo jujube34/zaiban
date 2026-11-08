@@ -858,23 +858,26 @@ export default function App() {
                   <kbd className="search-field__shortcut">/</kbd>
                 )}
               </label>
-              <div className="sort-switch" role="group" aria-label="项目排序">
-                <button
-                  type="button"
-                  className={sort === 'recent' ? 'is-active' : ''}
-                  onClick={() => setSort('recent')}
-                  aria-pressed={sort === 'recent'}
-                >
-                  最近更新
-                </button>
-                <button
-                  type="button"
-                  className={sort === 'name' ? 'is-active' : ''}
-                  onClick={() => setSort('name')}
-                  aria-pressed={sort === 'name'}
-                >
-                  名称
-                </button>
+              <div className="sort-control">
+                <span className="sort-label" id="project-sort-label">排序：</span>
+                <div className="sort-switch" role="group" aria-labelledby="project-sort-label">
+                  <button
+                    type="button"
+                    className={sort === 'recent' ? 'is-active' : ''}
+                    onClick={() => setSort('recent')}
+                    aria-pressed={sort === 'recent'}
+                  >
+                    最近更新
+                  </button>
+                  <button
+                    type="button"
+                    className={sort === 'name' ? 'is-active' : ''}
+                    onClick={() => setSort('name')}
+                    aria-pressed={sort === 'name'}
+                  >
+                    名称
+                  </button>
+                </div>
               </div>
             </div>
           )}
