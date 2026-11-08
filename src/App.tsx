@@ -143,7 +143,7 @@ export default function App() {
   const [projects, setProjects] = useState<ProjectView[]>([])
   const [saveState, setSaveState] = useState<SaveState>('idle')
   const [addProjectsOpen, setAddProjectsOpen] = useState(false)
-  const [expandedFolder, setExpandedFolder] = useState<string | null>(null)
+  const [expandedFolders, setExpandedFolders] = useState<Set<string>>(() => new Set())
   const [folderState, setFolderState] = useState<FolderState | null>(null)
   const [previewState, setPreviewState] = useState<PreviewState | null>(null)
   const [confirmSpec, setConfirmSpec] = useState<ConfirmSpec | null>(null)
@@ -172,7 +172,7 @@ export default function App() {
     const meta = await readWorkspace(handle)
     setRoot(handle)
     setStoredWorkspace(handle)
-    setExpandedFolder(null)
+    setExpandedFolders(new Set())
     setFolderState(null)
     setPreviewState(null)
     setQuery('')
@@ -653,7 +653,12 @@ export default function App() {
             await writeWorkspace(root, next)
             setWorkspace(next)
             setProjects((current) => current.filter((item) => item.folder !== project.folder))
-            setExpandedFolder(null)
+            setExpandedFolders((current) => {
+              if (!current.has(project.folder)) return current
+              const remaining = new Set(current)
+              remaining.delete(project.folder)
+              return remaining
+            })
             if (folderState?.folder === project.folder) setFolderState(null)
             if (previewState?.folder === project.folder) setPreviewState(null)
             setSaveState('saved')
@@ -708,11 +713,24 @@ export default function App() {
   )
 
   const toggleDetails = useCallback((project: ProjectView) => {
-    setExpandedFolder((current) => (current === project.folder ? null : project.folder))
+    setExpandedFolders((current) => {
+      const next = new Set(current)
+      if (next.has(project.folder)) {
+        next.delete(project.folder)
+      } else {
+        next.add(project.folder)
+      }
+      return next
+    })
   }, [])
 
   const showDetails = useCallback((project: ProjectView) => {
-    setExpandedFolder(project.folder)
+    setExpandedFolders((current) => {
+      if (current.has(project.folder)) return current
+      const next = new Set(current)
+      next.add(project.folder)
+      return next
+    })
   }, [])
 
   const filteredProjects = useMemo(() => {
@@ -843,13 +861,13 @@ export default function App() {
                   <Fragment key={project.folder}>
                     <ProjectCard
                       project={project}
-                      expanded={expandedFolder === project.folder}
+                      expanded={expandedFolders.has(project.folder)}
                       onToggleDetails={toggleDetails}
                       onShowDetails={showDetails}
                       onOpenFolder={(item) => openFolder(item)}
                       onPreviewReference={previewReference}
                     />
-                    {expandedFolder === project.folder && (
+                    {expandedFolders.has(project.folder) && (
                       <ProjectDetails
                         project={project}
                         saving={saveState === 'saving'}
