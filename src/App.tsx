@@ -193,7 +193,7 @@ export default function App() {
     setBoot('ready')
     setAddProjectsOpen(false)
     if (errors.length > 0) {
-      showToast(`${errors.length} 个项目需要检查，详情已标在卡片上`, 'error')
+      showToast(`${errors.length} 个项目需要检查，详情已标在列表中`, 'error')
     }
   }, [showToast])
 
@@ -822,7 +822,14 @@ export default function App() {
         {hasProjects ? (
           <>
             {filteredProjects.length > 0 ? (
-              <section className="project-grid" aria-label="进行中的项目">
+              <section className="project-ledger" aria-label="进行中的项目">
+                <div className="project-ledger__labels" aria-hidden="true">
+                  <span>项目</span>
+                  <span>最近进展</span>
+                  <span>重点文件</span>
+                  <span>更新</span>
+                  <span />
+                </div>
                 {filteredProjects.map((project) => (
                   <ProjectCard
                     key={project.folder}
@@ -835,14 +842,12 @@ export default function App() {
                 ))}
                 <button
                   type="button"
-                  className="project-card project-card--add"
+                  className="project-ledger__add"
                   onClick={() => setAddProjectsOpen(true)}
                 >
-                  <span className="project-card--add__icon">
-                    <Plus size={20} strokeWidth={1.8} />
-                  </span>
-                  <strong>添加项目</strong>
-                  <span>从工作目录中继续挑选</span>
+                  <Plus size={15} strokeWidth={1.8} />
+                  <span>添加项目</span>
+                  <small>从工作目录中继续挑选</small>
                 </button>
               </section>
             ) : (
@@ -857,7 +862,7 @@ export default function App() {
             )}
 
             <footer className="dashboard__footer">
-              <span>双击项目卡片，进入项目文件夹</span>
+              <span>双击项目进入文件夹</span>
               <i />
               <span>记录保存在每个项目的 .prjm/project.json</span>
               <i />

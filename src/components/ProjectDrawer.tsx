@@ -201,7 +201,7 @@ export function ProjectDrawer({
                 {workspaceName} / {project.folder}
               </p>
             </div>
-            <button type="button" className="button button--outline button--compact" onClick={onOpenFolder} disabled={project.missing}>
+            <button type="button" className="drawer-folder-link" onClick={onOpenFolder} disabled={project.missing}>
               <FolderOpen size={15} strokeWidth={1.8} />
               进入文件夹
             </button>
