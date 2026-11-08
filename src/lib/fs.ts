@@ -1,5 +1,7 @@
 import type {
+  DraftNoteImage,
   FolderEntry,
+  NoteImage,
   ProjectCandidate,
   ProjectData,
   ProjectNote,
@@ -95,17 +97,45 @@ function cleanPath(value: unknown): string | null {
   return parts.join('/')
 }
 
+function parseNoteImages(value: unknown): NoteImage[] {
+  if (!Array.isArray(value)) return []
+  return value
+    .filter((item): item is Record<string, unknown> => isRecord(item) && typeof item.path === 'string')
+    .map((item) => {
+      const path = cleanPath(item.path)
+      if (!path) return null
+      const width =
+        typeof item.width === 'number' && Number.isFinite(item.width)
+          ? Math.min(1400, Math.max(80, Math.round(item.width)))
+          : 360
+      return {
+        id: cleanString(item.id, makeId()),
+        path,
+        name: cleanString(item.name, path.split('/').pop() ?? 'image'),
+        width,
+      }
+    })
+    .filter((item): item is NoteImage => item !== null)
+}
+
 function parseNotes(value: unknown, fallback: string): ProjectNote[] {
   if (!Array.isArray(value)) return []
   return value
-    .filter((item): item is Record<string, unknown> => isRecord(item) && typeof item.body === 'string')
-    .map((item) => ({
-      id: cleanString(item.id, makeId()),
-      body: (item.body as string).trim(),
-      createdAt: cleanIso(item.createdAt, fallback),
-      updatedAt: cleanIso(item.updatedAt, cleanIso(item.createdAt, fallback)),
-    }))
-    .filter((note) => note.body.length > 0)
+    .filter(
+      (item): item is Record<string, unknown> =>
+        isRecord(item) && (typeof item.body === 'string' || Array.isArray(item.images)),
+    )
+    .map((item) => {
+      const images = parseNoteImages(item.images)
+      return {
+        id: cleanString(item.id, makeId()),
+        body: typeof item.body === 'string' ? item.body.trim() : '',
+        createdAt: cleanIso(item.createdAt, fallback),
+        updatedAt: cleanIso(item.updatedAt, cleanIso(item.createdAt, fallback)),
+        images,
+      }
+    })
+    .filter((note) => note.body.length > 0 || note.images.length > 0)
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
 }
 
@@ -229,6 +259,66 @@ export async function readProject(handle: FileSystemDirectoryHandle): Promise<Pr
 
 export async function writeProject(handle: FileSystemDirectoryHandle, data: ProjectData): Promise<void> {
   await writeJsonFile(handle, [APP_DIR, PROJECT_FILE], data)
+}
+
+const ATTACHMENTS_DIR = 'attachments'
+const IMAGE_EXTENSION_BY_MIME: Record<string, string> = {
+  'image/png': 'png',
+  'image/jpeg': 'jpg',
+  'image/gif': 'gif',
+  'image/webp': 'webp',
+  'image/svg+xml': 'svg',
+  'image/avif': 'avif',
+  'image/bmp': 'bmp',
+}
+
+function imageExtension(file: File): string {
+  const nameMatch = /\.([a-zA-Z0-9]{1,8})$/.exec(file.name)
+  const fromName = nameMatch?.[1]?.toLowerCase()
+  if (fromName && ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'avif', 'bmp'].includes(fromName)) {
+    return fromName === 'jpeg' ? 'jpg' : fromName
+  }
+  return IMAGE_EXTENSION_BY_MIME[file.type] ?? 'png'
+}
+
+export async function saveProjectImage(
+  projectHandle: FileSystemDirectoryHandle,
+  image: DraftNoteImage,
+): Promise<NoteImage> {
+  const appDirectory = await projectHandle.getDirectoryHandle(APP_DIR, { create: true })
+  const attachments = await appDirectory.getDirectoryHandle(ATTACHMENTS_DIR, { create: true })
+  const safeId = image.id.replace(/[^a-zA-Z0-9-]/g, '') || makeId()
+  const fileName = `${safeId}.${imageExtension(image.file)}`
+  const fileHandle = await attachments.getFileHandle(fileName, { create: true })
+  const writable = await fileHandle.createWritable()
+  try {
+    await writable.write(image.file)
+  } finally {
+    await writable.close()
+  }
+  return {
+    id: image.id,
+    path: `${ATTACHMENTS_DIR}/${fileName}`,
+    name: image.name || fileName,
+    width: Math.min(1400, Math.max(80, Math.round(image.width))),
+  }
+}
+
+export async function getProjectStoredFile(
+  projectHandle: FileSystemDirectoryHandle,
+  relativePath: string,
+): Promise<File> {
+  const path = cleanPath(relativePath)
+  if (!path) throw new Error('无效的附件路径')
+  const appDirectory = await projectHandle.getDirectoryHandle(APP_DIR)
+  const parts = path.split('/')
+  const fileName = parts.pop() as string
+  let directory = appDirectory
+  for (const part of parts) {
+    directory = await directory.getDirectoryHandle(part)
+  }
+  const fileHandle = await directory.getFileHandle(fileName)
+  return fileHandle.getFile()
 }
 
 export async function readWorkspace(root: FileSystemDirectoryHandle): Promise<WorkspaceData | null> {

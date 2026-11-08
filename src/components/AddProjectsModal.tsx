@@ -270,14 +270,6 @@ export function AddProjectsModal({ root, trackedFolders, onClose, onAdd }: AddPr
         )}
         {node.expanded &&
           node.children?.map((childPath) => renderTree(childPath, depth + 1))}
-        {node.expanded && node.children?.length === 0 && (
-          <div
-            className="folder-tree__note"
-            style={{ '--folder-depth': Math.min(depth, 10) } as CSSProperties}
-          >
-            这个文件夹里没有子文件夹
-          </div>
-        )}
       </Fragment>
     )
   }
@@ -310,10 +302,6 @@ export function AddProjectsModal({ root, trackedFolders, onClose, onAdd }: AddPr
         </>
       }
     >
-      <p className="modal__intro">
-        点击左侧箭头展开任意层级，勾选要跟踪的文件夹。也可以直接搜索所有层级。
-      </p>
-
       <div className="candidate-toolbar">
         <label className="search-field search-field--compact">
           <Search size={16} strokeWidth={1.8} />
@@ -367,7 +355,6 @@ export function AddProjectsModal({ root, trackedFolders, onClose, onAdd }: AddPr
           <div className="inline-state">
             <Folder size={24} strokeWidth={1.5} />
             <strong>这个工作目录里还没有子文件夹</strong>
-            <p>把正在进行的项目文件夹放进工作目录，再重新打开这个窗口。</p>
           </div>
         )}
 
@@ -379,7 +366,6 @@ export function AddProjectsModal({ root, trackedFolders, onClose, onAdd }: AddPr
           <div className="inline-state">
             <Loader2 size={22} className="spin" />
             <strong>正在搜索所有层级…</strong>
-            <p>递归查找匹配的文件夹，深层目录也会出现在结果中。</p>
           </div>
         )}
 
@@ -402,7 +388,6 @@ export function AddProjectsModal({ root, trackedFolders, onClose, onAdd }: AddPr
         {searchActive && searchState.status === 'ready' && searchState.items.length === 0 && (
           <div className="inline-state inline-state--small">
             <strong>没有找到「{query.trim()}」</strong>
-            <p>文件夹层级不限，但隐藏目录和 node_modules 不会出现在列表中。</p>
           </div>
         )}
 
@@ -423,7 +408,7 @@ export function AddProjectsModal({ root, trackedFolders, onClose, onAdd }: AddPr
 
         {searchActive && searchState.status === 'ready' && searchState.truncated && (
           <div className="folder-tree__limit">
-            目录数量较多，搜索只覆盖了部分内容。输入更具体的关键词可以缩小范围。
+            目录数量较多，搜索结果可能不完整。
           </div>
         )}
       </div>
@@ -464,7 +449,7 @@ function FolderChoice({
         ? `${noteCount > 0 ? `已有 ${noteCount} 条笔记` : '已有项目记录'}${
             candidate.existing.updatedAt ? ` · ${relativeTime(candidate.existing.updatedAt)}` : ''
           }`
-        : '新项目 · 尚无记录'
+        : ''
 
   return (
     <div
@@ -508,24 +493,26 @@ function FolderChoice({
         </span>
         <span className="folder-choice__body">
           <strong>{candidate.name}</strong>
-          <span className={`folder-choice__meta ${candidate.error ? 'is-error' : ''}`}>
-            {context && (
-              <>
-                <span className="folder-choice__path" title={candidate.folder}>
-                  {compactFolderPath(context)}
-                </span>
-                <span className="folder-choice__dot" />
-              </>
-            )}
-            {candidate.error ? (
-              <>
-                <TriangleAlert size={11} />
-                记录文件无法读取
-              </>
-            ) : (
-              status
-            )}
-          </span>
+          {(context || candidate.error || status) && (
+            <span className={`folder-choice__meta ${candidate.error ? 'is-error' : ''}`}>
+              {context && (
+                <>
+                  <span className="folder-choice__path" title={candidate.folder}>
+                    {compactFolderPath(context)}
+                  </span>
+                  <span className="folder-choice__dot" />
+                </>
+              )}
+              {candidate.error ? (
+                <>
+                  <TriangleAlert size={11} />
+                  记录文件无法读取
+                </>
+              ) : (
+                status
+              )}
+            </span>
+          )}
         </span>
       </button>
     </div>

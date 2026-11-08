@@ -126,8 +126,6 @@ export function FilePreview({ project, target, onClose }: FilePreviewProps) {
               <>
                 <FileIcon size={14} strokeWidth={1.8} />
                 <span>{fileSize(loaded.file.size)}</span>
-                <span>·</span>
-                <span>只读预览</span>
               </>
             ) : (
               '加载文件信息…'
@@ -208,7 +206,6 @@ export function FilePreview({ project, target, onClose }: FilePreviewProps) {
             <div className="preview-binary">
               <span className="preview-binary__icon"><FileQuestion size={30} strokeWidth={1.4} /></span>
               <strong>{target.name}</strong>
-              <p>这类文件暂不支持在应用内预览，可以下载后使用本机应用打开。</p>
               <button type="button" className="button button--primary button--compact" onClick={download}>
                 <Download size={15} strokeWidth={1.8} />
                 下载文件

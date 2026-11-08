@@ -25,15 +25,17 @@ import {
   makeId,
   readProject,
   readWorkspace,
+  saveProjectImage,
   supportsFileSystemAccess,
   writeProject,
   writeWorkspace,
 } from './lib/fs'
-import { headerDate, isThisWeek, nowIso, relativeTime } from './lib/format'
+import { nowIso } from './lib/format'
 import { loadWorkspaceHandle, saveWorkspaceHandle } from './lib/idb'
 import { baseName, formatFolderPath } from './lib/paths'
 import type {
   ConfirmSpec,
+  DraftNoteImage,
   PreviewTarget,
   ProjectCandidate,
   ProjectData,
@@ -472,28 +474,57 @@ export default function App() {
   )
 
   const addNote = useCallback(
-    async (project: ProjectView, body: string): Promise<boolean> => {
-      const timestamp = nowIso()
-      const note: ProjectNote = {
-        id: makeId(),
-        body: body.trim(),
-        createdAt: timestamp,
-        updatedAt: timestamp,
+    async (project: ProjectView, body: string, images: DraftNoteImage[]): Promise<boolean> => {
+      const trimmed = body.trim()
+      if (!project.handle || (!trimmed && images.length === 0)) return false
+
+      setSaveState('saving')
+      try {
+        if (root) {
+          const granted = await ensurePermission(root, 'readwrite', true)
+          if (!granted) throw new DOMException('没有工作目录的写入权限', 'NotAllowedError')
+        }
+
+        const storedImages = []
+        for (const image of images) {
+          storedImages.push(await saveProjectImage(project.handle, image))
+        }
+
+        const timestamp = nowIso()
+        const note: ProjectNote = {
+          id: makeId(),
+          body: trimmed,
+          createdAt: timestamp,
+          updatedAt: timestamp,
+          images: storedImages,
+        }
+        const next: ProjectData = {
+          ...project.data,
+          notes: [note, ...project.data.notes],
+          updatedAt: timestamp,
+        }
+        await writeProject(project.handle, next)
+        setProjects((current) =>
+          current.map((item) =>
+            item.folder === project.folder ? { ...item, data: next } : item,
+          ),
+        )
+        setSaveState('saved')
+        return true
+      } catch (caught) {
+        setSaveState('error')
+        showToast(friendlyFsError(caught), 'error')
+        return false
       }
-      const next: ProjectData = {
-        ...project.data,
-        notes: [note, ...project.data.notes],
-        updatedAt: timestamp,
-      }
-      return persistProject(project, next)
     },
-    [persistProject],
+    [root, showToast],
   )
 
   const editNote = useCallback(
     async (project: ProjectView, noteId: string, body: string): Promise<boolean> => {
       const trimmed = body.trim()
-      if (!trimmed) return false
+      const existing = project.data.notes.find((note) => note.id === noteId)
+      if (!trimmed && (!existing || existing.images.length === 0)) return false
       const timestamp = nowIso()
       const next: ProjectData = {
         ...project.data,
@@ -503,6 +534,37 @@ export default function App() {
         updatedAt: timestamp,
       }
       return persistProject(project, next)
+    },
+    [persistProject],
+  )
+
+  const resizeNoteImage = useCallback(
+    async (
+      project: ProjectView,
+      noteId: string,
+      imageId: string,
+      width: number,
+    ): Promise<boolean> => {
+      const timestamp = nowIso()
+      let changed = false
+      const notes = project.data.notes.map((note) => {
+        if (note.id !== noteId) return note
+        const images = note.images.map((image) => {
+          if (image.id !== imageId) return image
+          changed = true
+          return {
+            ...image,
+            width: Math.min(1400, Math.max(80, Math.round(width))),
+          }
+        })
+        return changed ? { ...note, images, updatedAt: timestamp } : note
+      })
+      if (!changed) return false
+      return persistProject(project, {
+        ...project.data,
+        notes,
+        updatedAt: timestamp,
+      })
     },
     [persistProject],
   )
@@ -678,30 +740,6 @@ export default function App() {
     })
   }, [projects, query, sort])
 
-  const weeklyNotes = useMemo(
-    () =>
-      projects.reduce(
-        (total, project) =>
-          total + project.data.notes.filter((note) => isThisWeek(note.createdAt)).length,
-        0,
-      ),
-    [projects],
-  )
-  const pinnedCount = useMemo(
-    () => projects.reduce((total, project) => total + project.data.references.length, 0),
-    [projects],
-  )
-  const lastUpdated = useMemo(() => {
-    if (projects.length === 0) return null
-    return projects.reduce(
-      (latest, project) =>
-        new Date(project.data.updatedAt).getTime() > new Date(latest).getTime()
-          ? project.data.updatedAt
-          : latest,
-      projects[0].data.updatedAt,
-    )
-  }, [projects])
-
   const workspaceName = root?.name ?? workspace?.name ?? ''
   const hasProjects = projects.length > 0
 
@@ -744,35 +782,6 @@ export default function App() {
 
       <main className="dashboard">
         <section className="dashboard__head">
-          <div className="dashboard__intro">
-            <p className="eyebrow dashboard__date">
-              {headerDate()}
-              <span className="eyebrow__dot" />
-              {weeklyNotes > 0 ? `本周留下 ${weeklyNotes} 条记录` : '从今天的第一笔进展开始'}
-            </p>
-            <div className="dashboard__title-row">
-              <h1>进行中的项目</h1>
-              {hasProjects && <span className="count-badge">{projects.length}</span>}
-            </div>
-            <p className="dashboard__sub">
-              {hasProjects ? (
-                <>
-                  {pinnedCount > 0
-                    ? `${pinnedCount} 个重点文件就绪`
-                    : '把重点文件固定在手边'}
-                  {lastUpdated && (
-                    <>
-                      <span className="sub-separator">·</span>
-                      最近更新 {relativeTime(lastUpdated)}
-                    </>
-                  )}
-                </>
-              ) : (
-                '把此刻正在做的事收拢到一处。'
-              )}
-            </p>
-          </div>
-
           {hasProjects && (
             <div className="dashboard__tools">
               <label className="search-field">
@@ -830,13 +839,6 @@ export default function App() {
           <>
             {filteredProjects.length > 0 ? (
               <section className="project-ledger" aria-label="进行中的项目">
-                <div className="project-ledger__labels" aria-hidden="true">
-                  <span>项目</span>
-                  <span>最近进展</span>
-                  <span>重点文件</span>
-                  <span>更新</span>
-                  <span />
-                </div>
                 {filteredProjects.map((project) => (
                   <Fragment key={project.folder}>
                     <ProjectCard
@@ -851,9 +853,12 @@ export default function App() {
                       <ProjectDetails
                         project={project}
                         saving={saveState === 'saving'}
-                        onAddNote={(body) => addNote(project, body)}
+                        onAddNote={(body, images) => addNote(project, body, images)}
                         onEditNote={(noteId, body) => editNote(project, noteId, body)}
                         onDeleteNote={(note) => requestDeleteNote(project, note)}
+                        onResizeNoteImage={(noteId, imageId, width) =>
+                          resizeNoteImage(project, noteId, imageId, width)
+                        }
                         onAddReference={() => openFolder(project, 'pin')}
                         onRemoveReference={(reference) => removeReference(project, reference)}
                         onPreviewReference={(reference) => previewReference(project, reference)}
@@ -869,29 +874,18 @@ export default function App() {
                 >
                   <Plus size={15} strokeWidth={1.8} />
                   <span>添加项目</span>
-                  <small>从工作目录中继续挑选</small>
                 </button>
               </section>
             ) : (
               <section className="empty-search">
                 <SearchX size={26} strokeWidth={1.5} />
                 <h2>没有匹配「{query.trim()}」的项目</h2>
-                <p>换一个关键词，或清空搜索查看全部项目。</p>
                 <button type="button" className="button button--ghost" onClick={() => setQuery('')}>
                   清空搜索
                 </button>
               </section>
             )}
 
-            <footer className="dashboard__footer">
-              <span>单击项目展开笔记</span>
-              <i />
-              <span>双击项目进入文件夹</span>
-              <i />
-              <span>记录保存在每个项目的 .prjm/project.json</span>
-              <i />
-              <span>所有内容仅留在本机</span>
-            </footer>
           </>
         ) : (
           <section className="empty-dashboard">
@@ -901,11 +895,7 @@ export default function App() {
                 <FolderPlus size={25} strokeWidth={1.45} />
               </span>
             </div>
-            <p className="eyebrow">工作台还是空的</p>
             <h2>开始跟踪第一个项目</h2>
-            <p className="empty-dashboard__copy">
-              从「{workspaceName}」里挑出正在进行的项目文件夹。笔记和重点文件会跟着项目走。
-            </p>
             <button
               type="button"
               className="button button--primary button--large"
@@ -914,7 +904,6 @@ export default function App() {
               <Plus size={18} strokeWidth={2} />
               选择项目文件夹
             </button>
-            <span className="empty-dashboard__hint">随时可以从上方菜单切换工作目录</span>
           </section>
         )}
       </main>

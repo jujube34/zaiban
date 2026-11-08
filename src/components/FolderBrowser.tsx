@@ -108,7 +108,7 @@ export function FolderBrowser({
       footer={
         <>
           <span className="folder-footer__hint">
-            {state === 'ready' ? `${entries.length} 项 · 点击文件夹进入，双击文件预览` : '\u00a0'}
+            {state === 'ready' ? `${entries.length} 项` : '\u00a0'}
           </span>
           <div className="modal__footer-actions">
             <button type="button" className="button button--ghost" onClick={onClose}>
@@ -118,15 +118,6 @@ export function FolderBrowser({
         </>
       }
     >
-      {intent === 'pin' && (
-        <div className="pin-callout">
-          <Star size={16} strokeWidth={1.8} />
-          <p>
-            点击文件右侧的 <strong>星标</strong>，固定到项目总览。可以一次固定多个文件。
-          </p>
-        </div>
-      )}
-
       <div className="folder-toolbar">
         <button
           type="button"
@@ -193,8 +184,7 @@ export function FolderBrowser({
         {state === 'ready' && entries.length === 0 && (
           <div className="inline-state">
             <FileQuestion size={25} strokeWidth={1.5} />
-            <strong>这个文件夹是空的</strong>
-            <p>把文件放入项目文件夹后，点击右上角刷新。</p>
+            <strong>空文件夹</strong>
           </div>
         )}
 
@@ -295,7 +285,6 @@ export function FolderBrowser({
           <span>
             已固定 <strong>{pinnedPaths.size}</strong> 个重点文件
           </span>
-          <span className="folder-summary__tip">双击文件可预览</span>
         </div>
       )}
     </Modal>

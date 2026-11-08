@@ -1,4 +1,4 @@
-import { ChevronRight, FolderOpen, TriangleAlert } from 'lucide-react'
+import { ChevronRight, FolderOpen, Image as ImageIcon, TriangleAlert } from 'lucide-react'
 import { useEffect, useRef, type CSSProperties, type KeyboardEvent, type MouseEvent } from 'react'
 import type { ProjectReference, ProjectView } from '../types'
 import { noteStamp, relativeTime } from '../lib/format'
@@ -81,7 +81,6 @@ export function ProjectCard({
       onClick={handleCardClick}
       onDoubleClick={handleCardDoubleClick}
       onKeyDown={handleCardKey}
-      title="点击展开笔记 · 双击进入项目文件夹"
     >
       <div className="project-row__primary">
         <span className="project-row__monogram">{monogramFor(displayName)}</span>
@@ -113,21 +112,24 @@ export function ProjectCard({
 
       <div className="project-row__progress">
         {latestNote ? (
-          <>
-            <p>{latestNote.body}</p>
+          <div className="project-row__latest">
+            {latestNote.body ? (
+              <p>{latestNote.body}</p>
+            ) : (
+              <p className="project-row__image-note">
+                <ImageIcon size={14} strokeWidth={1.8} />
+                {latestNote.images.length} 张图片
+              </p>
+            )}
             <span>{noteStamp(latestNote.createdAt)}</span>
-          </>
+          </div>
         ) : issue ? (
           <p className="is-empty">记录文件需要修复或重新创建后才能继续编辑。</p>
-        ) : (
-          <p className="is-empty">
-            {expanded ? '还没有笔记。在下方记录第一笔进展。' : '还没有笔记。展开项目，记下第一笔进展。'}
-          </p>
-        )}
+        ) : null}
       </div>
 
       <div className="project-row__references" aria-label="重点文件">
-        {visibleReferences.length > 0 ? (
+        {visibleReferences.length > 0 && (
           <>
             {visibleReferences.map((reference) => {
               const Icon = fileIconFor(reference.name)
@@ -162,14 +164,11 @@ export function ProjectCard({
               </button>
             )}
           </>
-        ) : (
-          <span className="project-row__blank">未固定文件</span>
         )}
       </div>
 
       <div className="project-row__updated">
         <span>{relativeTime(data.updatedAt)}</span>
-        <small>{latestNote ? '最近记录' : '尚未开始'}</small>
       </div>
 
       <div className="project-row__end">

@@ -1,8 +1,24 @@
+export interface NoteImage {
+  id: string
+  path: string
+  name: string
+  width: number
+}
+
+export interface DraftNoteImage {
+  id: string
+  file: File
+  url: string
+  name: string
+  width: number
+}
+
 export interface ProjectNote {
   id: string
   body: string
   createdAt: string
   updatedAt: string
+  images: NoteImage[]
 }
 
 export interface ProjectReference {

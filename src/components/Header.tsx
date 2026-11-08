@@ -132,7 +132,6 @@ export function Header({
                     安装到桌面
                   </button>
                 )}
-                <div className="dropdown__note">数据留在本机，不会上传。</div>
               </div>
             )}
           </div>
