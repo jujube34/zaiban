@@ -7,6 +7,7 @@ import type {
   WorkspaceData,
 } from '../types'
 import { nowIso } from './format'
+import { baseName } from './paths'
 
 export const APP_DIR = '.prjm'
 export const PROJECT_FILE = 'project.json'
@@ -36,13 +37,13 @@ export async function ensurePermission(
   return permission === 'granted'
 }
 
-export function createProjectData(folder: string): ProjectData {
+export function createProjectData(folder: string, name = baseName(folder)): ProjectData {
   const time = nowIso()
   return {
     app: 'prjm',
     kind: 'project',
     version: 1,
-    name: folder,
+    name,
     folder,
     createdAt: time,
     updatedAt: time,
@@ -142,7 +143,7 @@ export function parseProjectData(value: unknown, folder: string): ProjectData {
     app: 'prjm',
     kind: 'project',
     version: 1,
-    name: cleanString(value.name, folder),
+    name: cleanString(value.name, baseName(folder)),
     folder,
     createdAt,
     updatedAt: cleanIso(value.updatedAt, createdAt),
@@ -310,28 +311,115 @@ export async function listDirectory(
   })
 }
 
-export async function scanProjectFolders(
-  root: FileSystemDirectoryHandle,
-  trackedFolders: string[],
+export interface FolderSearchResult {
+  items: ProjectCandidate[]
+  truncated: boolean
+}
+
+const MAX_SEARCH_RESULTS = 200
+const MAX_SEARCH_DIRECTORIES = 5000
+
+function isBrowsableDirectory(name: string): boolean {
+  return !name.startsWith('.') && !IGNORED_DIRECTORIES.has(name)
+}
+
+function throwIfAborted(signal?: AbortSignal): void {
+  if (signal?.aborted) {
+    throw new DOMException('操作已取消', 'AbortError')
+  }
+}
+
+async function candidateForDirectory(
+  directory: FileSystemDirectoryHandle,
+  path: string,
+  name: string,
+): Promise<ProjectCandidate> {
+  let existing: ProjectData | null = null
+  let error: string | undefined
+  try {
+    existing = await readProject(directory)
+  } catch (caught) {
+    error = friendlyFsError(caught)
+  }
+  return { folder: path, name, handle: directory, existing, error }
+}
+
+export async function scanFolderLevel(
+  parent: FileSystemDirectoryHandle,
+  parentFolder = '',
 ): Promise<ProjectCandidate[]> {
-  const tracked = new Set(trackedFolders)
-  const candidates: ProjectCandidate[] = []
+  // Only one level is read at a time; the picker expands deeper levels lazily.
+  const directories: Array<{ name: string; handle: FileSystemDirectoryHandle; path: string }> = []
 
-  for await (const [name, handle] of root.entries()) {
-    if (handle.kind !== 'directory') continue
-    if (name.startsWith('.') || IGNORED_DIRECTORIES.has(name) || tracked.has(name)) continue
-
-    const directory = handle as FileSystemDirectoryHandle
-    let existing: ProjectData | null = null
-    let error: string | undefined
-    try {
-      existing = await readProject(directory)
-    } catch (caught) {
-      error = friendlyFsError(caught)
-    }
-
-    candidates.push({ folder: name, handle: directory, existing, error })
+  for await (const [name, handle] of parent.entries()) {
+    if (handle.kind !== 'directory' || !isBrowsableDirectory(name)) continue
+    directories.push({
+      name,
+      handle: handle as FileSystemDirectoryHandle,
+      path: parentFolder ? `${parentFolder}/${name}` : name,
+    })
   }
 
-  return candidates.sort((a, b) => collator.compare(a.folder, b.folder))
+  directories.sort((a, b) => collator.compare(a.name, b.name))
+  return Promise.all(
+    directories.map((directory) =>
+      candidateForDirectory(directory.handle, directory.path, directory.name),
+    ),
+  )
+}
+
+export async function searchProjectFolders(
+  root: FileSystemDirectoryHandle,
+  rawQuery: string,
+  signal?: AbortSignal,
+): Promise<FolderSearchResult> {
+  const query = rawQuery.trim().toLowerCase()
+  if (!query) return { items: [], truncated: false }
+
+  const queue: Array<{ directory: FileSystemDirectoryHandle; path: string }> = [
+    { directory: root, path: '' },
+  ]
+  const matches: ProjectCandidate[] = []
+  let queueIndex = 0
+  let directoriesVisited = 0
+  let truncated = false
+
+  while (queueIndex < queue.length) {
+    throwIfAborted(signal)
+    const current = queue[queueIndex]
+    queueIndex += 1
+
+    try {
+      for await (const [name, handle] of current.directory.entries()) {
+        throwIfAborted(signal)
+        if (handle.kind !== 'directory' || !isBrowsableDirectory(name)) continue
+
+        directoriesVisited += 1
+        if (directoriesVisited > MAX_SEARCH_DIRECTORIES) {
+          truncated = true
+          break
+        }
+
+        const path = current.path ? `${current.path}/${name}` : name
+        if (name.toLowerCase().includes(query)) {
+          matches.push(await candidateForDirectory(handle as FileSystemDirectoryHandle, path, name))
+          if (matches.length >= MAX_SEARCH_RESULTS) {
+            truncated = true
+            break
+          }
+        }
+
+        queue.push({ directory: handle as FileSystemDirectoryHandle, path })
+      }
+    } catch (caught) {
+      if (caught instanceof DOMException && caught.name === 'AbortError') throw caught
+      // A directory can disappear or be temporarily unavailable while searching.
+    }
+
+    if (truncated) break
+  }
+
+  throwIfAborted(signal)
+  matches.sort((a, b) => collator.compare(a.folder, b.folder))
+  return { items: matches, truncated }
 }

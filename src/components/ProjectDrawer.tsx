@@ -21,6 +21,7 @@ import {
 import type { ProjectNote, ProjectReference, ProjectView } from '../types'
 import { fullDate, noteStamp, relativeTime } from '../lib/format'
 import { fileIconFor } from '../lib/files'
+import { baseName, formatFolderPath } from '../lib/paths'
 import { accentFor, monogramFor } from '../lib/projectVisual'
 
 interface ProjectDrawerProps {
@@ -65,6 +66,7 @@ export function ProjectDrawer({
   onCloseRef.current = onClose
   const isBroken = Boolean(project.missing || project.loadError)
   const accent = accentFor(project.folder)
+  const displayName = baseName(project.folder)
 
   useEffect(() => {
     const previousFocus = document.activeElement as HTMLElement | null
@@ -187,7 +189,7 @@ export function ProjectDrawer({
               className="project-hero__mark"
               style={{ '--project-accent': accent } as CSSProperties}
             >
-              {monogramFor(project.folder)}
+              {monogramFor(displayName)}
             </div>
             <div className="project-hero__body">
               <div className="project-hero__kicker">
@@ -195,10 +197,10 @@ export function ProjectDrawer({
                 <span className="dot-separator" />
                 <span>更新于 {relativeTime(project.data.updatedAt)}</span>
               </div>
-              <h1 id="project-drawer-title">{project.folder}</h1>
+              <h1 id="project-drawer-title">{displayName}</h1>
               <p className="project-hero__path">
                 <FolderOpen size={14} strokeWidth={1.7} />
-                {workspaceName} / {project.folder}
+                {workspaceName} / {formatFolderPath(project.folder, ' / ')}
               </p>
             </div>
             <button type="button" className="drawer-folder-link" onClick={onOpenFolder} disabled={project.missing}>

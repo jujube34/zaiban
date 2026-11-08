@@ -25,6 +25,7 @@ export interface ProjectData {
 }
 
 export interface TrackedProject {
+  /** Workspace-relative folder path, using forward slashes. */
   folder: string
   addedAt: string
 }
@@ -40,6 +41,7 @@ export interface WorkspaceData {
 }
 
 export interface ProjectView {
+  /** Workspace-relative folder path, using forward slashes. */
   folder: string
   handle: FileSystemDirectoryHandle | null
   data: ProjectData
@@ -49,7 +51,9 @@ export interface ProjectView {
 }
 
 export interface ProjectCandidate {
+  /** Workspace-relative folder path, using forward slashes. */
   folder: string
+  name: string
   handle: FileSystemDirectoryHandle
   existing: ProjectData | null
   error?: string

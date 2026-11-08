@@ -1392,6 +1392,7 @@ kbd {
   align-items: center;
   gap: 7px;
   margin-top: 5px;
+  min-width: 0;
   color: #a2a398;
   font-size: 9.5px;
   white-space: nowrap;
@@ -1400,8 +1401,17 @@ kbd {
 .project-row__meta i {
   width: 3px;
   height: 3px;
+  flex: none;
   border-radius: 50%;
   background: #c3c1b7;
+}
+
+.project-row__parent {
+  max-width: 150px;
+  overflow: hidden;
+  color: #8f9589;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .project-row__progress {
@@ -1867,13 +1877,15 @@ kbd {
    添加项目
 --------------------------------------------- */
 .add-projects {
-  height: min(76svh, 760px);
+  height: auto;
+  max-height: min(88svh, 860px);
 }
 
 .add-projects .modal__body {
   display: flex;
   flex-direction: column;
   min-height: 0;
+  flex: 0 1 auto;
   padding-bottom: 13px;
   overflow: hidden;
 }
@@ -1893,45 +1905,89 @@ kbd {
 
 .candidate-list {
   min-height: 0;
-  flex: 1;
+  flex: 0 1 auto;
+  max-height: min(46svh, 480px);
   overflow-y: auto;
   padding-right: 3px;
 }
 
-.candidate {
-  width: 100%;
+.folder-tree {
+  padding: 1px 0 3px;
+}
+
+.folder-choice {
+  --folder-depth: 0;
   display: flex;
-  align-items: center;
-  gap: 11px;
-  min-height: 58px;
-  padding: 8px 9px;
-  border: 1px solid transparent;
-  border-radius: 5px;
-  background: transparent;
-  text-align: left;
-  transition:
-    background 140ms ease,
-    border-color 140ms ease;
+  align-items: stretch;
+  min-width: 0;
+  margin: 1px 0;
+  padding-left: calc(var(--folder-depth) * 18px);
+  border-radius: 4px;
+  transition: background 130ms ease;
 }
 
-.candidate + .candidate {
-  margin-top: 1px;
+.folder-choice:hover {
+  background: rgba(244, 240, 231, 0.72);
 }
 
-.candidate:hover {
-  background: rgba(244, 240, 231, 0.7);
+.folder-choice.is-selected {
+  background: rgba(235, 242, 233, 0.72);
 }
 
-.candidate.is-selected {
-  background: rgba(235, 242, 233, 0.65);
-  border-color: rgba(161, 183, 158, 0.45);
-}
-
-.candidate.is-disabled {
+.folder-choice.is-tracked .folder-choice__select,
+.folder-choice.is-disabled .folder-choice__select {
   opacity: 0.56;
 }
 
-.candidate__check {
+.folder-choice__expander,
+.folder-choice__expander-spacer {
+  width: 31px;
+  flex: none;
+  align-self: center;
+}
+
+.folder-choice__expander {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 36px;
+  padding: 0;
+  border: 0;
+  border-radius: 3px;
+  background: transparent;
+  color: #969b90;
+  transition:
+    background 130ms ease,
+    color 130ms ease;
+}
+
+.folder-choice__expander:hover {
+  background: #eae5da;
+  color: var(--ink-2);
+}
+
+.folder-choice__expander svg {
+  transition: transform 150ms ease;
+}
+
+.folder-choice__expander.is-expanded svg {
+  transform: rotate(90deg);
+}
+
+.folder-choice__select {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 8px 7px 2px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  text-align: left;
+}
+
+.folder-choice__check {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1947,29 +2003,30 @@ kbd {
     border-color 140ms ease;
 }
 
-.candidate.is-selected .candidate__check {
+.folder-choice.is-selected .folder-choice__check,
+.folder-choice.is-tracked .folder-choice__check {
   border-color: var(--green);
   background: var(--green);
 }
 
-.candidate__folder {
+.folder-choice__folder {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
+  width: 31px;
+  height: 31px;
   flex: none;
   border-radius: 4px;
   background: #f0ece1;
   color: #8a907f;
 }
 
-.candidate.is-selected .candidate__folder {
+.folder-choice.is-selected .folder-choice__folder {
   background: #dde8da;
   color: #527059;
 }
 
-.candidate__body {
+.folder-choice__body {
   display: flex;
   flex-direction: column;
   gap: 2px;
@@ -1977,7 +2034,7 @@ kbd {
   flex: 1;
 }
 
-.candidate__body strong {
+.folder-choice__body strong {
   overflow: hidden;
   color: var(--ink-soft);
   font-size: 12.5px;
@@ -1986,27 +2043,69 @@ kbd {
   white-space: nowrap;
 }
 
-.candidate__body > span {
+.folder-choice__meta {
   display: flex;
   align-items: center;
   gap: 4px;
+  min-width: 0;
+  overflow: hidden;
   color: #96988c;
   font-size: 10px;
+  white-space: nowrap;
 }
 
-.candidate__body > span.candidate__error {
+.folder-choice__meta.is-error {
   color: #a7674e;
 }
 
-.candidate__chevron {
+.folder-choice__meta svg {
   flex: none;
-  color: #b8b7ac;
-  opacity: 0;
-  transition: opacity 140ms ease;
 }
 
-.candidate:hover .candidate__chevron {
-  opacity: 1;
+.folder-choice__path {
+  max-width: 300px;
+  overflow: hidden;
+  color: #a5a69a;
+  text-overflow: ellipsis;
+}
+
+.folder-choice__dot {
+  width: 3px;
+  height: 3px;
+  flex: none;
+  border-radius: 50%;
+  background: #c3c1b7;
+}
+
+.folder-tree__note {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 27px;
+  padding-top: 1px;
+  padding-bottom: 5px;
+  padding-left: calc(45px + var(--folder-depth, 0) * 18px);
+  color: #a5a69a;
+  font-size: 9.5px;
+}
+
+.folder-tree__note--error {
+  flex-wrap: wrap;
+  color: #a7674e;
+}
+
+.folder-tree__note--error .text-button {
+  margin-left: 2px;
+  color: #93604b;
+}
+
+.folder-tree__limit {
+  margin-top: 6px;
+  padding: 10px 8px;
+  border-top: 1px solid var(--line);
+  color: #a5a69a;
+  font-size: 9.5px;
+  line-height: 1.6;
 }
 
 .candidate-loading {
@@ -2188,17 +2287,17 @@ kbd {
 
 .project-hero__path {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 5px;
-  overflow: hidden;
   color: #9ca095;
   font-size: 10px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
 }
 
 .project-hero__path svg {
   flex: none;
+  margin-top: 2px;
   color: #aeb2a7;
 }
 
@@ -3720,6 +3819,10 @@ kbd {
     font-size: 9px;
   }
 
+  .project-row__parent {
+    max-width: 120px;
+  }
+
   .project-row__progress {
     padding-left: 0;
   }
@@ -3825,7 +3928,8 @@ kbd {
   }
 
   .add-projects {
-    height: 90svh;
+    height: auto;
+    max-height: 92svh;
   }
 
   .folder-modal {
@@ -3836,13 +3940,21 @@ kbd {
     padding-bottom: calc(13px + env(safe-area-inset-bottom));
   }
 
-  .candidate {
-    min-height: 59px;
-    padding: 7px 6px;
+  .folder-choice {
+    padding-left: calc(var(--folder-depth) * 12px);
   }
 
-  .candidate__chevron {
-    display: none;
+  .folder-choice__select {
+    gap: 8px;
+    padding-right: 4px;
+  }
+
+  .folder-choice__path {
+    max-width: 120px;
+  }
+
+  .folder-tree__note {
+    padding-left: calc(43px + var(--folder-depth, 0) * 12px);
   }
 
   .modal__selection {

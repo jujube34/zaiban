@@ -3,6 +3,7 @@ import { useEffect, useRef, type CSSProperties, type KeyboardEvent, type MouseEv
 import type { ProjectReference, ProjectView } from '../types'
 import { noteStamp, relativeTime } from '../lib/format'
 import { fileIconFor } from '../lib/files'
+import { baseName, compactFolderPath, formatFolderPath, parentPath } from '../lib/paths'
 import { accentFor, monogramFor } from '../lib/projectVisual'
 
 interface ProjectCardProps {
@@ -22,6 +23,8 @@ export function ProjectCard({
 }: ProjectCardProps) {
   const { data } = project
   const latestNote = data.notes[0]
+  const displayName = baseName(project.folder)
+  const parent = parentPath(project.folder)
   const accent = accentFor(project.folder)
   const issue = project.missing
     ? '文件夹不可用'
@@ -70,17 +73,17 @@ export function ProjectCard({
       style={{ '--project-accent': accent } as CSSProperties}
       tabIndex={0}
       role="button"
-      aria-label={`打开项目 ${project.folder}`}
+      aria-label={`打开项目 ${formatFolderPath(project.folder, ' / ')}`}
       onClick={handleCardClick}
       onDoubleClick={handleCardDoubleClick}
       onKeyDown={handleCardKey}
       title="点击查看笔记 · 双击进入项目文件夹"
     >
       <div className="project-row__primary">
-        <span className="project-row__monogram">{monogramFor(project.folder)}</span>
+        <span className="project-row__monogram">{monogramFor(displayName)}</span>
         <div className="project-row__identity">
           <div className="project-row__title-line">
-            <h2>{project.folder}</h2>
+            <h2>{displayName}</h2>
             {issue ? (
               <span className="project-row__status project-row__status--warning">
                 <TriangleAlert size={11} strokeWidth={2} />
@@ -94,6 +97,14 @@ export function ProjectCard({
             )}
           </div>
           <p className="project-row__meta">
+            {parent && (
+              <>
+                <span className="project-row__parent" title={project.folder}>
+                  {compactFolderPath(parent)}
+                </span>
+                <i />
+              </>
+            )}
             {data.notes.length} 条笔记
             <i />
             {data.references.length} 个重点文件
@@ -165,7 +176,7 @@ export function ProjectCard({
           stop(event)
           onOpenFolder(project)
         }}
-        aria-label={`${project.folder}：进入项目文件夹`}
+        aria-label={`${formatFolderPath(project.folder, ' / ')}：进入项目文件夹`}
         title="进入项目文件夹"
         disabled={project.missing}
       >

@@ -15,6 +15,7 @@ import type { FolderEntry, ProjectView } from '../types'
 import { fileDate, fileSize } from '../lib/format'
 import { friendlyFsError, getDirectoryByPath, listDirectory } from '../lib/fs'
 import { fileIconFor } from '../lib/files'
+import { baseName, formatFolderPath } from '../lib/paths'
 import { Modal } from './Modal'
 
 interface FolderBrowserProps {
@@ -95,11 +96,12 @@ export function FolderBrowser({
   }
 
   const title = intent === 'pin' ? '选择重点文件' : '项目文件夹'
+  const displayName = baseName(project.folder)
 
   return (
     <Modal
       title={title}
-      eyebrow={project.folder}
+      eyebrow={formatFolderPath(project.folder, ' / ')}
       onClose={onClose}
       size="wide"
       className="folder-modal"
@@ -139,7 +141,7 @@ export function FolderBrowser({
         <div className="breadcrumbs" aria-label="当前位置">
           <button type="button" className="breadcrumb" onClick={() => goTo(0)}>
             <FolderOpen size={14} strokeWidth={1.8} />
-            {project.folder}
+            {displayName}
           </button>
           {segments.map((segment, index) => (
             <span className="breadcrumb-group" key={`${segment}-${index}`}>
@@ -165,7 +167,7 @@ export function FolderBrowser({
         </button>
       </div>
 
-      <div className="folder-list" aria-label={currentPath || project.folder}>
+      <div className="folder-list" aria-label={currentPath || displayName}>
         {state === 'loading' && (
           <div className="folder-loading">
             <Loader2 size={20} className="spin" />

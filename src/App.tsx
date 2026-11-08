@@ -21,6 +21,7 @@ import {
   createWorkspaceData,
   ensurePermission,
   friendlyFsError,
+  getDirectoryByPath,
   makeId,
   readProject,
   readWorkspace,
@@ -30,6 +31,7 @@ import {
 } from './lib/fs'
 import { headerDate, isThisWeek, nowIso, relativeTime } from './lib/format'
 import { loadWorkspaceHandle, saveWorkspaceHandle } from './lib/idb'
+import { baseName, formatFolderPath } from './lib/paths'
 import type {
   ConfirmSpec,
   PreviewTarget,
@@ -64,7 +66,7 @@ async function loadProjectViews(
   for (const tracked of workspace.projects) {
     let handle: FileSystemDirectoryHandle
     try {
-      handle = await root.getDirectoryHandle(tracked.folder)
+      handle = await getDirectoryByPath(root, tracked.folder.split('/').filter(Boolean))
     } catch {
       views.push({
         folder: tracked.folder,
@@ -392,8 +394,8 @@ export default function App() {
         for (const candidate of candidates) {
           try {
             const data: ProjectData = candidate.existing
-              ? { ...candidate.existing, folder: candidate.folder }
-              : createProjectData(candidate.folder)
+              ? { ...candidate.existing, folder: candidate.folder, name: candidate.name }
+              : createProjectData(candidate.folder, candidate.name)
             await writeProject(candidate.handle, data)
             newViews.push({
               folder: candidate.folder,
@@ -402,7 +404,7 @@ export default function App() {
               addedAt,
             })
           } catch {
-            failed.push(candidate.folder)
+            failed.push(candidate.name)
           }
         }
 
@@ -577,8 +579,8 @@ export default function App() {
   const stopTracking = useCallback(
     (project: ProjectView) => {
       setConfirmSpec({
-        title: `停止跟踪「${project.folder}」？`,
-        description: '它只会从总览中消失。项目文件夹、笔记与重点文件引用都会完整保留，日后仍可重新添加。',
+        title: `停止跟踪「${baseName(project.folder)}」？`,
+        description: `「${formatFolderPath(project.folder, ' / ')}」只会从总览中消失。项目文件夹、笔记与重点文件引用都会完整保留，日后仍可重新添加。`,
         confirmLabel: '停止跟踪',
         tone: 'danger',
         onConfirm: async () => {
@@ -597,7 +599,7 @@ export default function App() {
             if (folderState?.folder === project.folder) setFolderState(null)
             if (previewState?.folder === project.folder) setPreviewState(null)
             setSaveState('saved')
-            showToast(`已停止跟踪「${project.folder}」`, 'success')
+            showToast(`已停止跟踪「${baseName(project.folder)}」`, 'success')
           } catch (caught) {
             setSaveState('error')
             showToast(friendlyFsError(caught), 'error')
@@ -666,7 +668,12 @@ export default function App() {
       : [...projects]
 
     return result.sort((a, b) => {
-      if (sort === 'name') return a.folder.localeCompare(b.folder, 'zh-CN', { numeric: true })
+      if (sort === 'name') {
+        return (
+          baseName(a.folder).localeCompare(baseName(b.folder), 'zh-CN', { numeric: true }) ||
+          a.folder.localeCompare(b.folder, 'zh-CN', { numeric: true })
+        )
+      }
       return new Date(b.data.updatedAt).getTime() - new Date(a.data.updatedAt).getTime()
     })
   }, [projects, query, sort])
