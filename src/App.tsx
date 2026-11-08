@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   FolderPlus,
   Plus,
@@ -13,7 +13,7 @@ import { FilePreview } from './components/FilePreview'
 import { FolderBrowser } from './components/FolderBrowser'
 import { Header } from './components/Header'
 import { ProjectCard } from './components/ProjectCard'
-import { ProjectDrawer } from './components/ProjectDrawer'
+import { ProjectDetails } from './components/ProjectDetails'
 import { Toast, useToast } from './components/Toast'
 import { Welcome } from './components/Welcome'
 import {
@@ -141,7 +141,7 @@ export default function App() {
   const [projects, setProjects] = useState<ProjectView[]>([])
   const [saveState, setSaveState] = useState<SaveState>('idle')
   const [addProjectsOpen, setAddProjectsOpen] = useState(false)
-  const [selectedFolder, setSelectedFolder] = useState<string | null>(null)
+  const [expandedFolder, setExpandedFolder] = useState<string | null>(null)
   const [folderState, setFolderState] = useState<FolderState | null>(null)
   const [previewState, setPreviewState] = useState<PreviewState | null>(null)
   const [confirmSpec, setConfirmSpec] = useState<ConfirmSpec | null>(null)
@@ -152,10 +152,6 @@ export default function App() {
   const searchRef = useRef<HTMLInputElement>(null)
   const { toast, showToast, dismissToast } = useToast()
 
-  const selectedProject = useMemo(
-    () => projects.find((project) => project.folder === selectedFolder) ?? null,
-    [projects, selectedFolder],
-  )
   const folderProject = useMemo(
     () => (folderState ? projects.find((project) => project.folder === folderState.folder) ?? null : null),
     [projects, folderState],
@@ -174,7 +170,7 @@ export default function App() {
     const meta = await readWorkspace(handle)
     setRoot(handle)
     setStoredWorkspace(handle)
-    setSelectedFolder(null)
+    setExpandedFolder(null)
     setFolderState(null)
     setPreviewState(null)
     setQuery('')
@@ -278,13 +274,13 @@ export default function App() {
       ) {
         return
       }
-      if (document.querySelector('[data-modal-open="true"]') || selectedFolder) return
+      if (document.querySelector('[data-modal-open="true"]')) return
       event.preventDefault()
       searchRef.current?.focus()
     }
     document.addEventListener('keydown', onKeyDown)
     return () => document.removeEventListener('keydown', onKeyDown)
-  }, [boot, selectedFolder])
+  }, [boot])
 
   const chooseWorkspace = useCallback(async () => {
     if (!window.showDirectoryPicker) {
@@ -595,7 +591,7 @@ export default function App() {
             await writeWorkspace(root, next)
             setWorkspace(next)
             setProjects((current) => current.filter((item) => item.folder !== project.folder))
-            setSelectedFolder(null)
+            setExpandedFolder(null)
             if (folderState?.folder === project.folder) setFolderState(null)
             if (previewState?.folder === project.folder) setPreviewState(null)
             setSaveState('saved')
@@ -649,8 +645,12 @@ export default function App() {
     [],
   )
 
-  const openDrawer = useCallback((project: ProjectView) => {
-    setSelectedFolder(project.folder)
+  const toggleDetails = useCallback((project: ProjectView) => {
+    setExpandedFolder((current) => (current === project.folder ? null : project.folder))
+  }, [])
+
+  const showDetails = useCallback((project: ProjectView) => {
+    setExpandedFolder(project.folder)
   }, [])
 
   const filteredProjects = useMemo(() => {
@@ -838,14 +838,29 @@ export default function App() {
                   <span />
                 </div>
                 {filteredProjects.map((project) => (
-                  <ProjectCard
-                    key={project.folder}
-                    project={project}
-                    onOpen={openDrawer}
-                    onOpenFolder={(item) => openFolder(item)}
-                    onPreviewReference={previewReference}
-                    onShowReferences={openDrawer}
-                  />
+                  <Fragment key={project.folder}>
+                    <ProjectCard
+                      project={project}
+                      expanded={expandedFolder === project.folder}
+                      onToggleDetails={toggleDetails}
+                      onShowDetails={showDetails}
+                      onOpenFolder={(item) => openFolder(item)}
+                      onPreviewReference={previewReference}
+                    />
+                    {expandedFolder === project.folder && (
+                      <ProjectDetails
+                        project={project}
+                        saving={saveState === 'saving'}
+                        onAddNote={(body) => addNote(project, body)}
+                        onEditNote={(noteId, body) => editNote(project, noteId, body)}
+                        onDeleteNote={(note) => requestDeleteNote(project, note)}
+                        onAddReference={() => openFolder(project, 'pin')}
+                        onRemoveReference={(reference) => removeReference(project, reference)}
+                        onPreviewReference={(reference) => previewReference(project, reference)}
+                        onStopTracking={() => stopTracking(project)}
+                      />
+                    )}
+                  </Fragment>
                 ))}
                 <button
                   type="button"
@@ -869,6 +884,8 @@ export default function App() {
             )}
 
             <footer className="dashboard__footer">
+              <span>单击项目展开笔记</span>
+              <i />
               <span>双击项目进入文件夹</span>
               <i />
               <span>记录保存在每个项目的 .prjm/project.json</span>
@@ -908,24 +925,6 @@ export default function App() {
           trackedFolders={workspace?.projects.map((project) => project.folder) ?? []}
           onClose={() => setAddProjectsOpen(false)}
           onAdd={addProjects}
-        />
-      )}
-
-      {selectedProject && (
-        <ProjectDrawer
-          key={selectedProject.folder}
-          project={selectedProject}
-          workspaceName={workspaceName}
-          saving={saveState === 'saving'}
-          onClose={() => setSelectedFolder(null)}
-          onOpenFolder={() => openFolder(selectedProject)}
-          onAddNote={(body) => addNote(selectedProject, body)}
-          onEditNote={(noteId, body) => editNote(selectedProject, noteId, body)}
-          onDeleteNote={(note) => requestDeleteNote(selectedProject, note)}
-          onAddReference={() => openFolder(selectedProject, 'pin')}
-          onRemoveReference={(reference) => removeReference(selectedProject, reference)}
-          onPreviewReference={(reference) => previewReference(selectedProject, reference)}
-          onStopTracking={() => stopTracking(selectedProject)}
         />
       )}
 
