@@ -284,7 +284,7 @@ export function AddProjectsModal({ root, trackedFolders, onClose, onAdd }: AddPr
 
   return (
     <Modal
-      title="添加进行中的项目"
+      title="添加项目"
       eyebrow={`工作目录 · ${root.name}`}
       onClose={onClose}
       className="add-projects"
@@ -311,7 +311,7 @@ export function AddProjectsModal({ root, trackedFolders, onClose, onAdd }: AddPr
       }
     >
       <p className="modal__intro">
-        点击左侧箭头展开任意层级，勾选正在进行的项目。也可以直接搜索所有层级。
+        点击左侧箭头展开任意层级，勾选要跟踪的文件夹。也可以直接搜索所有层级。
       </p>
 
       <div className="candidate-toolbar">

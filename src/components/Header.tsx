@@ -157,7 +157,12 @@ export function Header({
                     : '本地存储'}
             </span>
           </span>
-          <button type="button" className="button button--primary button--compact" onClick={onAddProject}>
+          <button
+            type="button"
+            className="button button--primary button--compact"
+            onClick={onAddProject}
+            aria-label="添加项目"
+          >
             <Plus size={17} strokeWidth={2} />
             <span className="button__label">添加项目</span>
           </button>

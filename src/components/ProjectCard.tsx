@@ -88,15 +88,10 @@ export function ProjectCard({
         <div className="project-row__identity">
           <div className="project-row__title-line">
             <h2>{displayName}</h2>
-            {issue ? (
+            {issue && (
               <span className="project-row__status project-row__status--warning">
                 <TriangleAlert size={11} strokeWidth={2} />
                 {issue}
-              </span>
-            ) : (
-              <span className="project-row__status">
-                <i />
-                进行中
               </span>
             )}
           </div>

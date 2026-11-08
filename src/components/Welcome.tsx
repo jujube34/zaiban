@@ -120,18 +120,13 @@ export function Welcome({ supported, storedName, busy, onChoose, onResume }: Wel
             <FileText size={15} strokeWidth={1.7} />
             <span>方案要点.pdf</span>
           </div>
-
-          <div className="visual-count">
-            <span>04</span>
-            <small>进行中</small>
-          </div>
         </div>
       </main>
 
       <footer className="welcome__footer">
         <div className="welcome__steps">
           <span><b>01</b> 选择工作目录</span>
-          <span><b>02</b> 勾选进行中的项目</span>
+          <span><b>02</b> 勾选要跟踪的项目</span>
           <span><b>03</b> 记录进展，固定重点文件</span>
         </div>
         <span className="welcome__support">支持最新版 Chrome / Edge</span>
