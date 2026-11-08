@@ -343,11 +343,6 @@ export function ProjectDetails({
               )}
 
               <div className="composer__foot">
-                <div className="composer__tools">
-                  {draft.trim() && (
-                    <span className="composer__count">{draft.trim().length} 字</span>
-                  )}
-                </div>
                 <button
                   type="button"
                   className="button button--primary button--compact"
