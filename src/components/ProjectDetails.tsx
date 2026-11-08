@@ -3,7 +3,6 @@ import {
   Loader2,
   Pencil,
   Plus,
-  StopCircle,
   Trash2,
   TriangleAlert,
   X,
@@ -43,7 +42,6 @@ interface ProjectDetailsProps {
   onAddReference: () => void
   onRemoveReference: (reference: ProjectReference) => Promise<void>
   onPreviewReference: (reference: ProjectReference) => void
-  onStopTracking: () => void
 }
 
 const SPLITTER_MIN = 240
@@ -67,7 +65,6 @@ export function ProjectDetails({
   onAddReference,
   onRemoveReference,
   onPreviewReference,
-  onStopTracking,
 }: ProjectDetailsProps) {
   const [draft, setDraft] = useState('')
   const [draftImages, setDraftImages] = useState<DraftNoteImage[]>([])
@@ -457,13 +454,6 @@ export function ProjectDetails({
             </div>
           )}
         </section>
-
-        <div className="project-details__footer">
-          <button type="button" className="text-button text-button--danger" onClick={onStopTracking}>
-            <StopCircle size={15} strokeWidth={1.8} />
-            停止跟踪这个项目
-          </button>
-        </div>
       </aside>
     </section>
   )

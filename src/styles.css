@@ -348,14 +348,6 @@ p {
   gap: 4px;
 }
 
-.text-button--danger {
-  color: #9a5145;
-}
-
-.text-button--danger:hover {
-  color: var(--danger);
-}
-
 .eyebrow {
   display: flex;
   align-items: center;
@@ -1083,7 +1075,7 @@ kbd {
     minmax(260px, 1.35fr)
     minmax(150px, 0.72fr)
     88px
-    58px;
+    86px;
   column-gap: clamp(14px, 1.6vw, 24px);
 }
 
@@ -1354,7 +1346,8 @@ kbd {
 }
 
 .project-row__expander,
-.project-row__folder {
+.project-row__folder,
+.project-row__stop {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1383,9 +1376,15 @@ kbd {
 }
 
 .project-row__expander:hover,
-.project-row__folder:hover {
+.project-row__folder:hover,
+.project-row__stop:hover {
   background: #eeebe1;
   color: var(--ink-2);
+}
+
+.project-row__stop:hover {
+  background: #f7e9e4;
+  color: #a55a43;
 }
 
 .project-row__folder {
@@ -1493,14 +1492,6 @@ kbd {
 
 .project-details__side .details-section {
   margin-bottom: 0;
-}
-
-.project-details__footer {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding-top: 10px;
-  border-top: 1px solid #e3ddd0;
 }
 
 .project-details--broken .notice {
@@ -3228,7 +3219,7 @@ kbd {
       minmax(215px, 1.28fr)
       minmax(125px, 0.7fr)
       78px
-      58px;
+      86px;
     column-gap: 14px;
   }
 
@@ -3256,7 +3247,7 @@ kbd {
   }
 
   .project-row {
-    grid-template-columns: minmax(0, 1fr) 58px;
+    grid-template-columns: minmax(0, 1fr) 84px;
     grid-template-areas:
       "primary end"
       "progress progress"
@@ -3558,6 +3549,11 @@ kbd {
     height: 32px;
   }
 
+  .project-row__stop {
+    width: 25px;
+    height: 32px;
+  }
+
   .project-details {
     gap: 12px;
     padding: 1px 4px 12px;
@@ -3578,10 +3574,6 @@ kbd {
 
   .project-details__side {
     gap: 12px;
-  }
-
-  .project-details__footer {
-    padding-top: 8px;
   }
 
   .project-ledger__add {
@@ -3868,8 +3860,6 @@ body {
 .project-row__monogram,
 .text-button,
 .text-button:hover,
-.text-button--danger,
-.text-button--danger:hover,
 .project-row__status--warning,
 .notice--warning,
 .notice--warning strong,
@@ -3893,8 +3883,7 @@ body {
   color: #a45d43;
 }
 
-.save-status--error svg,
-.text-button--danger svg {
+.save-status--error svg {
   color: #9a5145;
 }
 

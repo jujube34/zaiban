@@ -892,6 +892,7 @@ export default function App() {
                       onToggleDetails={toggleDetails}
                       onShowDetails={showDetails}
                       onOpenFolder={(item) => openFolder(item)}
+                      onStopTracking={stopTracking}
                       onPreviewReference={previewReference}
                     />
                     {expandedFolders.has(project.folder) && (
@@ -909,7 +910,6 @@ export default function App() {
                         onAddReference={() => openFolder(project, 'pin')}
                         onRemoveReference={(reference) => removeReference(project, reference)}
                         onPreviewReference={(reference) => previewReference(project, reference)}
-                        onStopTracking={() => stopTracking(project)}
                       />
                     )}
                   </Fragment>

@@ -1,4 +1,4 @@
-import { ChevronRight, FolderOpen, Image as ImageIcon, TriangleAlert } from 'lucide-react'
+import { ChevronRight, FolderOpen, Image as ImageIcon, StopCircle, TriangleAlert } from 'lucide-react'
 import { useEffect, useRef, type CSSProperties, type KeyboardEvent, type MouseEvent } from 'react'
 import type { ProjectReference, ProjectView } from '../types'
 import { noteStamp, relativeTime } from '../lib/format'
@@ -12,6 +12,7 @@ interface ProjectCardProps {
   onToggleDetails: (project: ProjectView) => void
   onShowDetails: (project: ProjectView) => void
   onOpenFolder: (project: ProjectView) => void
+  onStopTracking: (project: ProjectView) => void
   onPreviewReference: (project: ProjectView, reference: ProjectReference) => void
 }
 
@@ -21,6 +22,7 @@ export function ProjectCard({
   onToggleDetails,
   onShowDetails,
   onOpenFolder,
+  onStopTracking,
   onPreviewReference,
 }: ProjectCardProps) {
   const { data } = project
@@ -199,6 +201,19 @@ export function ProjectCard({
           disabled={project.missing}
         >
           <FolderOpen size={17} strokeWidth={1.75} />
+        </button>
+        <button
+          type="button"
+          className="project-row__stop"
+          onClick={(event) => {
+            stop(event)
+            onStopTracking(project)
+          }}
+          onDoubleClick={stop}
+          aria-label={`停止跟踪 ${displayName}`}
+          title="停止跟踪"
+        >
+          <StopCircle size={17} strokeWidth={1.75} />
         </button>
       </div>
     </article>
