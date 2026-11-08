@@ -96,19 +96,13 @@ export function ProjectCard({
               </span>
             )}
           </div>
-          <p className="project-row__meta">
-            {parent && (
-              <>
-                <span className="project-row__parent" title={project.folder}>
-                  {compactFolderPath(parent)}
-                </span>
-                <i />
-              </>
-            )}
-            {data.notes.length} 条笔记
-            <i />
-            {data.references.length} 个重点文件
-          </p>
+          {parent && (
+            <p className="project-row__meta">
+              <span className="project-row__parent" title={project.folder}>
+                {compactFolderPath(parent)}
+              </span>
+            </p>
+          )}
         </div>
       </div>
 

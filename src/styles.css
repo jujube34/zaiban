@@ -1224,14 +1224,6 @@ kbd {
   white-space: normal;
 }
 
-.project-row__meta i {
-  width: 3px;
-  height: 3px;
-  flex: none;
-  border-radius: 50%;
-  background: #c3c1b7;
-}
-
 .project-row__parent {
   max-width: 150px;
   overflow: hidden;
