@@ -1,0 +1,71 @@
+name: Desktop builds
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "desktop-v*"
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: ${{ matrix.label }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - label: Windows x64
+            os: windows-latest
+            rust_targets: x86_64-pc-windows-msvc
+            build_args: --target x86_64-pc-windows-msvc --bundles nsis
+            artifact_name: zaiban-windows-x64
+            artifact_path: src-tauri/target/x86_64-pc-windows-msvc/release/bundle/nsis/*.exe
+          - label: macOS universal
+            os: macos-latest
+            rust_targets: aarch64-apple-darwin,x86_64-apple-darwin
+            build_args: --target universal-apple-darwin --bundles dmg
+            artifact_name: zaiban-macos-universal
+            artifact_path: src-tauri/target/universal-apple-darwin/release/bundle/dmg/*.dmg
+
+    runs-on: ${{ matrix.os }}
+    env:
+      CARGO_TERM_COLOR: always
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.rust_targets }}
+
+      - name: Cache Rust build
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri -> target
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Typecheck frontend
+        run: npm run typecheck
+
+      - name: Build desktop app
+        run: npm run desktop:build -- ${{ matrix.build_args }}
+
+      - name: Upload installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: ${{ matrix.artifact_path }}
+          if-no-files-found: error
+          retention-days: 14

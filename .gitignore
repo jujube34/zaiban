@@ -8,3 +8,10 @@ Thumbs.db
 .qa
 test-results
 playwright-report
+src-tauri/target
+src-tauri/gen
+src-tauri/.cargo
+release/**/*.exe
+release/**/*.dmg
+release/**/*.app
+release/**/*.sha256

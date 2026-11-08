@@ -23,6 +23,7 @@ import {
   friendlyFsError,
   getDirectoryByPath,
   makeId,
+  pickWorkspaceDirectory,
   readProject,
   readWorkspace,
   saveProjectImage,
@@ -30,6 +31,7 @@ import {
   writeProject,
   writeWorkspace,
 } from './lib/fs'
+import { isDesktopRuntime, openInSystemFileViewer } from './lib/desktop'
 import { nowIso } from './lib/format'
 import { loadWorkspaceHandle, saveWorkspaceHandle } from './lib/idb'
 import { baseName, formatFolderPath } from './lib/paths'
@@ -308,16 +310,13 @@ export default function App() {
   }, [boot])
 
   const chooseWorkspace = useCallback(async () => {
-    if (!window.showDirectoryPicker) {
-      showToast('当前浏览器不支持选择本地文件夹', 'error')
+    if (!supportsFileSystemAccess()) {
+      showToast('当前环境不支持选择本地文件夹', 'error')
       return
     }
     setStarting(true)
     try {
-      const handle = await window.showDirectoryPicker({
-        id: 'zaiban-workspace',
-        mode: 'readwrite',
-      })
+      const handle = await pickWorkspaceDirectory()
       const granted = await ensurePermission(handle, 'readwrite', true)
       if (!granted) throw new DOMException('需要读写权限才能保存项目记录', 'NotAllowedError')
       await enterWorkspace(handle)
@@ -717,6 +716,15 @@ export default function App() {
         showToast('项目文件夹不可用，无法预览文件', 'error')
         return
       }
+
+      if (isDesktopRuntime()) {
+        setPreviewState(null)
+        void openInSystemFileViewer(project.handle, reference.path).catch((caught) => {
+          showToast(friendlyFsError(caught), 'error')
+        })
+        return
+      }
+
       setPreviewState({
         folder: project.folder,
         target: {

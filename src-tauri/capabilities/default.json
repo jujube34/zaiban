@@ -1,0 +1,6 @@
+{
+  "identifier": "default",
+  "description": "在办桌面窗口的默认能力",
+  "windows": ["main"],
+  "permissions": ["core:default"]
+}

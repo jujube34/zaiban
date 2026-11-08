@@ -10,6 +10,12 @@ import type {
 } from '../types'
 import { nowIso } from './format'
 import { baseName } from './paths'
+import {
+  createDesktopRootHandle,
+  isDesktopRuntime,
+  pickDesktopWorkspace,
+  readDesktopFileMetadata,
+} from './desktop'
 
 export const APP_DIR = '.prjm'
 export const PROJECT_FILE = 'project.json'
@@ -21,7 +27,23 @@ const collator = new Intl.Collator('zh-CN', { numeric: true, sensitivity: 'base'
 type PermissionMode = 'read' | 'readwrite'
 
 export function supportsFileSystemAccess(): boolean {
-  return typeof window !== 'undefined' && typeof window.showDirectoryPicker === 'function'
+  return (
+    isDesktopRuntime() ||
+    (typeof window !== 'undefined' && typeof window.showDirectoryPicker === 'function')
+  )
+}
+
+export async function pickWorkspaceDirectory(): Promise<FileSystemDirectoryHandle> {
+  if (isDesktopRuntime()) {
+    const path = await pickDesktopWorkspace()
+    if (!path) throw new DOMException('操作已取消', 'AbortError')
+    return createDesktopRootHandle(path)
+  }
+
+  if (typeof window === 'undefined' || typeof window.showDirectoryPicker !== 'function') {
+    throw new Error('当前浏览器不支持选择本地文件夹')
+  }
+  return window.showDirectoryPicker({ id: 'zaiban-workspace', mode: 'readwrite' })
 }
 
 export async function ensurePermission(
@@ -29,6 +51,7 @@ export async function ensurePermission(
   mode: PermissionMode = 'readwrite',
   request = false,
 ): Promise<boolean> {
+  if (isDesktopRuntime()) return true
   if (typeof handle.queryPermission !== 'function') return true
 
   let permission = await handle.queryPermission({ mode })
@@ -335,6 +358,7 @@ export async function writeWorkspace(
 }
 
 export function friendlyFsError(error: unknown): string {
+  if (typeof error === 'string' && error.trim()) return error
   if (error instanceof DOMException) {
     if (error.name === 'NotAllowedError') return '没有访问权限，请重新连接工作目录'
     if (error.name === 'NotFoundError') return '文件夹或文件已被移动或删除'
@@ -385,12 +409,18 @@ export async function listDirectory(
     const fileHandle = handle as FileSystemFileHandle
     let size: number | undefined
     let lastModified: number | undefined
-    try {
-      const file = await fileHandle.getFile()
-      size = file.size
-      lastModified = file.lastModified
-    } catch {
-      // Metadata can be unavailable for a broken or cloud-only file; listing still works.
+    const desktopMetadata = readDesktopFileMetadata(fileHandle)
+    if (desktopMetadata) {
+      size = desktopMetadata.size
+      lastModified = desktopMetadata.lastModified
+    } else {
+      try {
+        const file = await fileHandle.getFile()
+        size = file.size
+        lastModified = file.lastModified
+      } catch {
+        // Metadata can be unavailable for a broken or cloud-only file; listing still works.
+      }
     }
     entries.push({ name, kind: 'file', handle: fileHandle, size, lastModified })
   }

@@ -1,3 +1,9 @@
+import {
+  isDesktopRuntime,
+  loadDesktopWorkspaceRoot,
+  saveDesktopWorkspaceRoot,
+} from './desktop'
+
 const DATABASE_NAME = 'zaiban-local'
 const STORE_NAME = 'handles'
 const WORKSPACE_KEY = 'workspace-root'
@@ -18,6 +24,7 @@ function openDatabase(): Promise<IDBDatabase> {
 }
 
 export async function loadWorkspaceHandle(): Promise<FileSystemDirectoryHandle | null> {
+  if (isDesktopRuntime()) return loadDesktopWorkspaceRoot()
   try {
     const database = await openDatabase()
     return await new Promise((resolve, reject) => {
@@ -33,6 +40,12 @@ export async function loadWorkspaceHandle(): Promise<FileSystemDirectoryHandle |
 }
 
 export async function saveWorkspaceHandle(handle: FileSystemDirectoryHandle): Promise<void> {
+  if (isDesktopRuntime()) {
+    const desktopRoot = (handle as unknown as { root?: unknown }).root
+    if (typeof desktopRoot === 'string') saveDesktopWorkspaceRoot(desktopRoot)
+    return
+  }
+
   const database = await openDatabase()
   try {
     await new Promise<void>((resolve, reject) => {

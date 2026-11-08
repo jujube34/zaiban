@@ -1,4 +1,5 @@
 import { ArrowRight, FileText, Folder, Loader2 } from 'lucide-react'
+import { isDesktopRuntime } from '../lib/desktop'
 import { Brand } from './Brand'
 
 interface WelcomeProps {
@@ -10,6 +11,8 @@ interface WelcomeProps {
 }
 
 export function Welcome({ supported, storedName, busy, onChoose, onResume }: WelcomeProps) {
+  const desktop = isDesktopRuntime()
+
   return (
     <div className="welcome">
       <header className="welcome__header">
@@ -108,7 +111,9 @@ export function Welcome({ supported, storedName, busy, onChoose, onResume }: Wel
       </main>
 
       <footer className="welcome__footer">
-        <span className="welcome__support">支持最新版 Chrome / Edge</span>
+        <span className="welcome__support">
+          {desktop ? '桌面版 · 数据只保存在本机' : '支持最新版 Chrome / Edge'}
+        </span>
       </footer>
     </div>
   )

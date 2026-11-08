@@ -7,7 +7,12 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
-    "typecheck": "tsc -b --pretty false"
+    "typecheck": "tsc -b --pretty false",
+    "desktop:dev": "tauri dev",
+    "desktop:build": "tauri build",
+    "desktop:build:win": "tauri build --bundles nsis",
+    "desktop:build:mac": "tauri build --bundles app,dmg",
+    "desktop:check": "cargo check --manifest-path src-tauri/Cargo.toml"
   },
   "dependencies": {
     "lucide-react": "^0.468.0",
@@ -15,6 +20,7 @@
     "react-dom": "^19.3.1"
   },
   "devDependencies": {
+    "@tauri-apps/cli": "2.11.4",
     "@types/node": "^22.19.0",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
