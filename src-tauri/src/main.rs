@@ -14,6 +14,7 @@ struct DirectoryEntry {
     kind: &'static str,
     size: Option<u64>,
     last_modified: Option<u64>,
+    created_at: Option<u64>,
 }
 
 fn resolve(root: &str, relative: &str) -> Result<PathBuf, String> {
@@ -46,6 +47,14 @@ fn modified_millis(metadata: &fs::Metadata) -> Option<u64> {
         .map(|duration| duration.as_millis() as u64)
 }
 
+fn created_millis(metadata: &fs::Metadata) -> Option<u64> {
+    metadata
+        .created()
+        .ok()
+        .and_then(|time| time.duration_since(UNIX_EPOCH).ok())
+        .map(|duration| duration.as_millis() as u64)
+}
+
 fn list_directory_impl(root: &str, relative: &str) -> Result<Vec<DirectoryEntry>, String> {
     let directory = resolve(root, relative)?;
     if !directory.is_dir() {
@@ -70,6 +79,7 @@ fn list_directory_impl(root: &str, relative: &str) -> Result<Vec<DirectoryEntry>
                 kind: "directory",
                 size: None,
                 last_modified: modified_millis(&metadata),
+                created_at: created_millis(&metadata),
             });
         } else if metadata.is_file() {
             entries.push(DirectoryEntry {
@@ -77,6 +87,7 @@ fn list_directory_impl(root: &str, relative: &str) -> Result<Vec<DirectoryEntry>
                 kind: "file",
                 size: Some(metadata.len()),
                 last_modified: modified_millis(&metadata),
+                created_at: created_millis(&metadata),
             });
         }
     }

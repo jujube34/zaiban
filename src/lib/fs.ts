@@ -14,7 +14,7 @@ import {
   createDesktopRootHandle,
   isDesktopRuntime,
   pickDesktopWorkspace,
-  readDesktopFileMetadata,
+  readDesktopHandleMetadata,
 } from './desktop'
 
 export const APP_DIR = '.prjm'
@@ -402,17 +402,27 @@ export async function listDirectory(
   for await (const [name, handle] of directory.entries()) {
     if (hideAppDirectory && name === APP_DIR) continue
     if (handle.kind === 'directory') {
-      entries.push({ name, kind: 'directory', handle: handle as FileSystemDirectoryHandle })
+      const directoryHandle = handle as FileSystemDirectoryHandle
+      const metadata = readDesktopHandleMetadata(directoryHandle)
+      entries.push({
+        name,
+        kind: 'directory',
+        handle: directoryHandle,
+        lastModified: metadata?.lastModified,
+        createdAt: metadata?.createdAt,
+      })
       continue
     }
 
     const fileHandle = handle as FileSystemFileHandle
     let size: number | undefined
     let lastModified: number | undefined
-    const desktopMetadata = readDesktopFileMetadata(fileHandle)
+    let createdAt: number | undefined
+    const desktopMetadata = readDesktopHandleMetadata(fileHandle)
     if (desktopMetadata) {
       size = desktopMetadata.size
       lastModified = desktopMetadata.lastModified
+      createdAt = desktopMetadata.createdAt
     } else {
       try {
         const file = await fileHandle.getFile()
@@ -422,7 +432,7 @@ export async function listDirectory(
         // Metadata can be unavailable for a broken or cloud-only file; listing still works.
       }
     }
-    entries.push({ name, kind: 'file', handle: fileHandle, size, lastModified })
+    entries.push({ name, kind: 'file', handle: fileHandle, size, lastModified, createdAt })
   }
 
   return entries.sort((a, b) => {
@@ -449,6 +459,12 @@ function throwIfAborted(signal?: AbortSignal): void {
   }
 }
 
+function isoMillis(value: string | undefined): number | undefined {
+  if (!value) return undefined
+  const time = new Date(value).getTime()
+  return Number.isNaN(time) ? undefined : time
+}
+
 async function candidateForDirectory(
   directory: FileSystemDirectoryHandle,
   path: string,
@@ -461,7 +477,17 @@ async function candidateForDirectory(
   } catch (caught) {
     error = friendlyFsError(caught)
   }
-  return { folder: path, name, handle: directory, existing, error }
+
+  const metadata = readDesktopHandleMetadata(directory)
+  return {
+    folder: path,
+    name,
+    handle: directory,
+    existing,
+    error,
+    lastModified: metadata?.lastModified ?? isoMillis(existing?.updatedAt),
+    createdAt: metadata?.createdAt ?? isoMillis(existing?.createdAt),
+  }
 }
 
 export async function scanFolderLevel(

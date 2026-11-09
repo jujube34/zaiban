@@ -1,6 +1,7 @@
 import { ArrowRight, FileText, Folder, Loader2 } from 'lucide-react'
-import { isDesktopRuntime } from '../lib/desktop'
+import { isDesktopRuntime, isWindowsDesktopRuntime } from '../lib/desktop'
 import { Brand } from './Brand'
+import { WindowControls } from './WindowControls'
 
 interface WelcomeProps {
   supported: boolean
@@ -12,11 +13,16 @@ interface WelcomeProps {
 
 export function Welcome({ supported, storedName, busy, onChoose, onResume }: WelcomeProps) {
   const desktop = isDesktopRuntime()
+  const windowTitlebar = isWindowsDesktopRuntime()
 
   return (
-    <div className="welcome">
-      <header className="welcome__header">
+    <div className={`welcome ${windowTitlebar ? 'welcome--window-titlebar' : ''}`.trim()}>
+      <header
+        className="welcome__header"
+        data-tauri-drag-region={windowTitlebar ? 'deep' : undefined}
+      >
         <Brand />
+        <WindowControls />
       </header>
 
       <main className="welcome__main">

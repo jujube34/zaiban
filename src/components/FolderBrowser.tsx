@@ -16,7 +16,13 @@ import { fileDate, fileSize } from '../lib/format'
 import { friendlyFsError, getDirectoryByPath, listDirectory } from '../lib/fs'
 import { fileIconFor } from '../lib/files'
 import { baseName, formatFolderPath } from '../lib/paths'
+import {
+  compareSortableEntries,
+  type EntrySortField,
+  type SortDirection,
+} from '../lib/sort'
 import { Modal } from './Modal'
+import { SortControl } from './SortControl'
 
 interface FolderBrowserProps {
   project: ProjectView
@@ -44,6 +50,8 @@ export function FolderBrowser({
   const [selected, setSelected] = useState<string | null>(null)
   const [refreshKey, setRefreshKey] = useState(0)
   const [pinning, setPinning] = useState<string | null>(null)
+  const [sortField, setSortField] = useState<EntrySortField>('name')
+  const [sortDirection, setSortDirection] = useState<SortDirection>('asc')
 
   const pinnedPaths = useMemo(
     () => new Set(project.data.references.map((reference) => reference.path)),
@@ -80,6 +88,23 @@ export function FolderBrowser({
 
   const currentPath = segments.join('/')
   const files = entries.filter((entry) => entry.kind === 'file')
+  const sortedEntries = useMemo(
+    () =>
+      [...entries].sort((left, right) => {
+        if (left.kind !== right.kind) return left.kind === 'directory' ? -1 : 1
+        return compareSortableEntries(left, right, sortField, sortDirection)
+      }),
+    [entries, sortDirection, sortField],
+  )
+
+  const changeSortField = (field: EntrySortField) => {
+    setSortField(field)
+    setSortDirection(field === 'name' ? 'asc' : 'desc')
+  }
+
+  const toggleSortDirection = () => {
+    setSortDirection((current) => (current === 'asc' ? 'desc' : 'asc'))
+  }
 
   const togglePin = async (path: string, name: string) => {
     if (pinning || saving) return
@@ -147,6 +172,12 @@ export function FolderBrowser({
             </span>
           ))}
         </div>
+        <SortControl
+          field={sortField}
+          direction={sortDirection}
+          onFieldChange={changeSortField}
+          onDirectionToggle={toggleSortDirection}
+        />
         <button
           type="button"
           className="icon-button icon-button--quiet"
@@ -189,10 +220,15 @@ export function FolderBrowser({
         )}
 
         {state === 'ready' &&
-          entries.map((entry) => {
+          sortedEntries.map((entry) => {
             const path = [...segments, entry.name].join('/')
             const isPinned = pinnedPaths.has(path)
             const Icon = entry.kind === 'directory' ? Folder : fileIconFor(entry.name)
+            const displayedTime = sortField === 'created' ? entry.createdAt : entry.lastModified
+            const folderMeta =
+              sortField !== 'name' && displayedTime
+                ? `${sortField === 'created' ? '创建' : '修改'} ${fileDate(displayedTime)}`
+                : '文件夹'
 
             if (entry.kind === 'directory') {
               return (
@@ -206,7 +242,7 @@ export function FolderBrowser({
                     <Icon size={19} strokeWidth={1.6} />
                   </span>
                   <span className="tree-row__name">{entry.name}</span>
-                  <span className="tree-row__meta">文件夹</span>
+                  <span className="tree-row__meta">{folderMeta}</span>
                   <ChevronRight className="tree-row__chevron" size={16} strokeWidth={1.8} />
                 </button>
               )
@@ -236,7 +272,9 @@ export function FolderBrowser({
                     <span className="tree-row__name">{entry.name}</span>
                     <span className="tree-row__sub">
                       {fileSize(entry.size)}
-                      {entry.lastModified ? ` · ${fileDate(entry.lastModified)}` : ''}
+                      {displayedTime
+                        ? ` · ${sortField === 'created' ? '创建 ' : ''}${fileDate(displayedTime)}`
+                        : ''}
                     </span>
                   </span>
                 </button>

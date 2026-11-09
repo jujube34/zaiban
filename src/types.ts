@@ -73,6 +73,9 @@ export interface ProjectCandidate {
   handle: FileSystemDirectoryHandle
   existing: ProjectData | null
   error?: string
+  /** Filesystem timestamps, when the runtime exposes them. */
+  lastModified?: number
+  createdAt?: number
 }
 
 export interface FolderEntry {
@@ -80,7 +83,9 @@ export interface FolderEntry {
   kind: 'file' | 'directory'
   handle: FileSystemFileHandle | FileSystemDirectoryHandle
   size?: number
+  /** Filesystem timestamps, when the runtime exposes them. */
   lastModified?: number
+  createdAt?: number
 }
 
 export type SaveState = 'idle' | 'saving' | 'saved' | 'error'

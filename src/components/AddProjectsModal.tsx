@@ -19,14 +19,20 @@ import {
   X,
 } from 'lucide-react'
 import type { ProjectCandidate } from '../types'
-import { relativeTime } from '../lib/format'
+import { fileDate, relativeTime } from '../lib/format'
 import {
   friendlyFsError,
   scanFolderLevel,
   searchProjectFolders,
 } from '../lib/fs'
 import { compactFolderPath, parentPath } from '../lib/paths'
+import {
+  compareSortableEntries,
+  type EntrySortField,
+  type SortDirection,
+} from '../lib/sort'
 import { Modal } from './Modal'
+import { SortControl } from './SortControl'
 
 interface AddProjectsModalProps {
   root: FileSystemDirectoryHandle
@@ -67,9 +73,45 @@ export function AddProjectsModal({ root, trackedFolders, onClose, onAdd }: AddPr
   })
   const [searchNonce, setSearchNonce] = useState(0)
   const [adding, setAdding] = useState(false)
+  const [sortField, setSortField] = useState<EntrySortField>('name')
+  const [sortDirection, setSortDirection] = useState<SortDirection>('asc')
   const treeRequest = useRef(0)
   const trackedSet = useMemo(() => new Set(trackedFolders), [trackedFolders])
   const searchActive = query.trim().length > 0
+
+  const comparePaths = useCallback(
+    (leftPath: string, rightPath: string) => {
+      const left = nodes.get(leftPath)?.candidate
+      const right = nodes.get(rightPath)?.candidate
+      if (!left || !right) {
+        return leftPath.localeCompare(rightPath, 'zh-CN', { numeric: true })
+      }
+      return compareSortableEntries(left, right, sortField, sortDirection)
+    },
+    [nodes, sortDirection, sortField],
+  )
+
+  const sortedRoots = useMemo(
+    () => [...roots].sort(comparePaths),
+    [comparePaths, roots],
+  )
+
+  const sortedSearchItems = useMemo(
+    () =>
+      [...searchState.items].sort((left, right) =>
+        compareSortableEntries(left, right, sortField, sortDirection),
+      ),
+    [searchState.items, sortDirection, sortField],
+  )
+
+  const changeSortField = (field: EntrySortField) => {
+    setSortField(field)
+    setSortDirection(field === 'name' ? 'asc' : 'desc')
+  }
+
+  const toggleSortDirection = () => {
+    setSortDirection((current) => (current === 'asc' ? 'desc' : 'asc'))
+  }
 
   const patchNode = useCallback((path: string, patch: Partial<TreeNode>) => {
     setNodes((current) => {
@@ -240,6 +282,7 @@ export function AddProjectsModal({ root, trackedFolders, onClose, onAdd }: AddPr
           expandable={canExpand}
           expanded={node.expanded}
           loading={node.loading}
+          sortField={sortField}
           onToggleExpand={() => toggleExpand(path)}
           onToggleSelect={() => toggleSelection(node.candidate)}
         />
@@ -269,7 +312,7 @@ export function AddProjectsModal({ root, trackedFolders, onClose, onAdd }: AddPr
           </div>
         )}
         {node.expanded &&
-          node.children?.map((childPath) => renderTree(childPath, depth + 1))}
+          node.children?.slice().sort(comparePaths).map((childPath) => renderTree(childPath, depth + 1))}
       </Fragment>
     )
   }
@@ -322,6 +365,12 @@ export function AddProjectsModal({ root, trackedFolders, onClose, onAdd }: AddPr
             </button>
           )}
         </label>
+        <SortControl
+          field={sortField}
+          direction={sortDirection}
+          onFieldChange={changeSortField}
+          onDirectionToggle={toggleSortDirection}
+        />
       </div>
 
       <div className="candidate-list folder-tree">
@@ -360,7 +409,7 @@ export function AddProjectsModal({ root, trackedFolders, onClose, onAdd }: AddPr
 
         {!searchActive &&
           scanState === 'ready' &&
-          roots.map((path) => renderTree(path, 0))}
+          sortedRoots.map((path) => renderTree(path, 0))}
 
         {searchActive && searchState.status === 'loading' && (
           <div className="inline-state">
@@ -393,7 +442,7 @@ export function AddProjectsModal({ root, trackedFolders, onClose, onAdd }: AddPr
 
         {searchActive &&
           searchState.status === 'ready' &&
-          searchState.items.map((candidate) => (
+          sortedSearchItems.map((candidate) => (
             <FolderChoice
               key={candidate.folder}
               candidate={candidate}
@@ -401,6 +450,7 @@ export function AddProjectsModal({ root, trackedFolders, onClose, onAdd }: AddPr
               selected={selected.has(candidate.folder)}
               tracked={trackedSet.has(candidate.folder)}
               expandable={false}
+              sortField={sortField}
               onToggleExpand={() => undefined}
               onToggleSelect={() => toggleSelection(candidate)}
             />
@@ -424,6 +474,7 @@ interface FolderChoiceProps {
   expandable: boolean
   expanded?: boolean
   loading?: boolean
+  sortField: EntrySortField
   onToggleExpand: () => void
   onToggleSelect: () => void
 }
@@ -436,6 +487,7 @@ function FolderChoice({
   expandable,
   expanded = false,
   loading = false,
+  sortField,
   onToggleExpand,
   onToggleSelect,
 }: FolderChoiceProps) {
@@ -450,6 +502,12 @@ function FolderChoice({
             candidate.existing.updatedAt ? ` · ${relativeTime(candidate.existing.updatedAt)}` : ''
           }`
         : ''
+  const activeTime =
+    sortField === 'created'
+      ? candidate.createdAt
+      : sortField === 'modified'
+        ? candidate.lastModified
+        : undefined
 
   return (
     <div
@@ -493,7 +551,7 @@ function FolderChoice({
         </span>
         <span className="folder-choice__body">
           <strong>{candidate.name}</strong>
-          {(context || candidate.error || status) && (
+          {(context || candidate.error || status || activeTime) && (
             <span className={`folder-choice__meta ${candidate.error ? 'is-error' : ''}`}>
               {context && (
                 <>
@@ -510,6 +568,14 @@ function FolderChoice({
                 </>
               ) : (
                 status
+              )}
+              {activeTime && !candidate.error && (
+                <>
+                  {(context || status) && <span className="folder-choice__dot" />}
+                  <span>
+                    {sortField === 'modified' ? '修改于' : '创建于'} {fileDate(activeTime)}
+                  </span>
+                </>
               )}
             </span>
           )}

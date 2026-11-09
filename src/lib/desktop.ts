@@ -1,6 +1,16 @@
+export interface DesktopWindowHandle {
+  minimize: () => Promise<void>
+  toggleMaximize: () => Promise<void>
+  close: () => Promise<void>
+  isMaximized: () => Promise<boolean>
+}
+
 interface TauriBridge {
   core?: {
     invoke?: <T>(command: string, args?: Record<string, unknown>) => Promise<T>
+  }
+  window?: {
+    getCurrentWindow?: () => DesktopWindowHandle
   }
 }
 
@@ -13,6 +23,7 @@ interface DesktopDirectoryEntry {
   kind: 'file' | 'directory'
   size?: number
   lastModified?: number
+  createdAt?: number
 }
 
 const DESKTOP_WORKSPACE_KEY = 'prjm.desktopWorkspaceRoot'
@@ -28,6 +39,17 @@ function tauriInvoke<T>(command: string, args?: Record<string, unknown>): Promis
 export function isDesktopRuntime(): boolean {
   if (typeof window === 'undefined') return false
   return typeof (window as WindowWithTauri).__TAURI__?.core?.invoke === 'function'
+}
+
+export function isWindowsDesktopRuntime(): boolean {
+  if (!isDesktopRuntime() || typeof navigator === 'undefined') return false
+  return /Windows/i.test(navigator.userAgent)
+}
+
+export function getDesktopWindowHandle(): DesktopWindowHandle | null {
+  if (typeof window === 'undefined') return null
+  const getCurrentWindow = (window as WindowWithTauri).__TAURI__?.window?.getCurrentWindow
+  return typeof getCurrentWindow === 'function' ? getCurrentWindow() : null
 }
 
 export function desktopInvoke<T>(command: string, args?: Record<string, unknown>): Promise<T> {
@@ -95,24 +117,27 @@ function mimeForName(name: string): string {
   return mimes[extension] ?? ''
 }
 
-export interface DesktopFileMetadata {
+export interface DesktopHandleMetadata {
   size?: number
   lastModified?: number
+  createdAt?: number
 }
 
-export function readDesktopFileMetadata(handle: FileSystemHandle): DesktopFileMetadata | null {
+export function readDesktopHandleMetadata(
+  handle: FileSystemHandle,
+): DesktopHandleMetadata | null {
   const value = handle as unknown as {
     __zaibanDesktopSize?: unknown
     __zaibanDesktopModified?: unknown
+    __zaibanDesktopCreated?: unknown
   }
-  if (typeof value.__zaibanDesktopSize !== 'number') return null
-  return {
-    size: value.__zaibanDesktopSize,
-    lastModified:
-      typeof value.__zaibanDesktopModified === 'number'
-        ? value.__zaibanDesktopModified
-        : undefined,
-  }
+  const size = typeof value.__zaibanDesktopSize === 'number' ? value.__zaibanDesktopSize : undefined
+  const lastModified =
+    typeof value.__zaibanDesktopModified === 'number' ? value.__zaibanDesktopModified : undefined
+  const createdAt =
+    typeof value.__zaibanDesktopCreated === 'number' ? value.__zaibanDesktopCreated : undefined
+  if (size === undefined && lastModified === undefined && createdAt === undefined) return null
+  return { size, lastModified, createdAt }
 }
 
 class DesktopFileHandle {
@@ -120,6 +145,7 @@ class DesktopFileHandle {
   readonly name: string
   readonly __zaibanDesktopSize?: number
   readonly __zaibanDesktopModified?: number
+  readonly __zaibanDesktopCreated?: number
 
   constructor(
     private readonly root: string,
@@ -127,10 +153,12 @@ class DesktopFileHandle {
     name: string,
     size?: number,
     lastModified?: number,
+    createdAt?: number,
   ) {
     this.name = name
     this.__zaibanDesktopSize = size
     this.__zaibanDesktopModified = lastModified
+    this.__zaibanDesktopCreated = createdAt
   }
 
   async getFile(): Promise<File> {
@@ -196,12 +224,19 @@ class DesktopFileHandle {
 class DesktopDirectoryHandle {
   readonly kind = 'directory'
   readonly name: string
+  readonly __zaibanDesktopModified?: number
+  readonly __zaibanDesktopCreated?: number
 
   constructor(
     private readonly root: string,
     private readonly path: string,
+    name?: string,
+    createdAt?: number,
+    lastModified?: number,
   ) {
-    this.name = pathBaseName(path) || pathBaseName(root) || root
+    this.name = name || pathBaseName(path) || pathBaseName(root) || root
+    this.__zaibanDesktopModified = lastModified
+    this.__zaibanDesktopCreated = createdAt
   }
 
   async queryPermission(): Promise<PermissionState> {
@@ -253,7 +288,13 @@ class DesktopDirectoryHandle {
     })
     for (const entry of entries) {
       if (entry.kind === 'directory') {
-        const handle = new DesktopDirectoryHandle(this.root, this.child(entry.name))
+        const handle = new DesktopDirectoryHandle(
+          this.root,
+          this.child(entry.name),
+          entry.name,
+          entry.createdAt,
+          entry.lastModified,
+        )
         yield [entry.name, handle as unknown as FileSystemHandle]
       } else {
         const handle = new DesktopFileHandle(
@@ -262,6 +303,7 @@ class DesktopDirectoryHandle {
           entry.name,
           entry.size,
           entry.lastModified,
+          entry.createdAt,
         )
         yield [entry.name, handle as unknown as FileSystemHandle]
       }

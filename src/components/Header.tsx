@@ -12,7 +12,9 @@ import {
   TriangleAlert,
 } from 'lucide-react'
 import type { SaveState } from '../types'
+import { isWindowsDesktopRuntime } from '../lib/desktop'
 import { Brand } from './Brand'
+import { WindowControls } from './WindowControls'
 
 interface HeaderProps {
   workspaceName: string
@@ -37,6 +39,7 @@ export function Header({
 }: HeaderProps) {
   const [menuOpen, setMenuOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
+  const windowTitlebar = isWindowsDesktopRuntime()
 
   useEffect(() => {
     if (!menuOpen) return
@@ -55,7 +58,10 @@ export function Header({
   }, [menuOpen])
 
   return (
-    <header className="app-header">
+    <header
+      className={`app-header ${windowTitlebar ? 'app-header--window-titlebar' : ''}`.trim()}
+      data-tauri-drag-region={windowTitlebar ? 'deep' : undefined}
+    >
       <div className="app-header__inner">
         <div className="app-header__left">
           <Brand />
@@ -165,6 +171,7 @@ export function Header({
             <Plus size={17} strokeWidth={2} />
             <span className="button__label">添加项目</span>
           </button>
+          <WindowControls />
         </div>
       </div>
     </header>

@@ -1,7 +1,6 @@
-import { ChevronRight, FolderOpen, Image as ImageIcon, StopCircle, TriangleAlert } from 'lucide-react'
+import { ChevronRight, FolderOpen, Plus, StopCircle, TriangleAlert } from 'lucide-react'
 import { useEffect, useRef, type CSSProperties, type KeyboardEvent, type MouseEvent } from 'react'
 import type { ProjectReference, ProjectView } from '../types'
-import { noteStamp, relativeTime } from '../lib/format'
 import { fileIconFor } from '../lib/files'
 import { baseName, compactFolderPath, formatFolderPath, parentPath } from '../lib/paths'
 import { accentFor, monogramFor } from '../lib/projectVisual'
@@ -12,6 +11,7 @@ interface ProjectCardProps {
   onToggleDetails: (project: ProjectView) => void
   onShowDetails: (project: ProjectView) => void
   onOpenFolder: (project: ProjectView) => void
+  onRecord: (project: ProjectView) => void
   onStopTracking: (project: ProjectView) => void
   onPreviewReference: (project: ProjectView, reference: ProjectReference) => void
 }
@@ -22,11 +22,11 @@ export function ProjectCard({
   onToggleDetails,
   onShowDetails,
   onOpenFolder,
+  onRecord,
   onStopTracking,
   onPreviewReference,
 }: ProjectCardProps) {
   const { data } = project
-  const latestNote = data.notes[0]
   const displayName = baseName(project.folder)
   const parent = parentPath(project.folder)
   const accent = accentFor(project.folder)
@@ -106,24 +106,6 @@ export function ProjectCard({
         </div>
       </div>
 
-      <div className="project-row__progress">
-        {latestNote ? (
-          <div className="project-row__latest">
-            {latestNote.body ? (
-              <p>{latestNote.body}</p>
-            ) : (
-              <p className="project-row__image-note">
-                <ImageIcon size={14} strokeWidth={1.8} />
-                {latestNote.images.length} 张图片
-              </p>
-            )}
-            <span>{noteStamp(latestNote.createdAt)}</span>
-          </div>
-        ) : issue ? (
-          <p className="is-empty">记录文件需要修复或重新创建后才能继续编辑。</p>
-        ) : null}
-      </div>
-
       <div className="project-row__references" aria-label="重点文件">
         {visibleReferences.length > 0 && (
           <>
@@ -163,11 +145,22 @@ export function ProjectCard({
         )}
       </div>
 
-      <div className="project-row__updated">
-        <span>{relativeTime(data.updatedAt)}</span>
-      </div>
-
       <div className="project-row__end">
+        <button
+          type="button"
+          className="button button--primary button--compact project-row__record"
+          onClick={(event) => {
+            stop(event)
+            onRecord(project)
+          }}
+          onDoubleClick={stop}
+          aria-label={`记录 ${displayName} 的项目进展`}
+          title="记录项目进展"
+          disabled={Boolean(issue)}
+        >
+          <Plus size={14} strokeWidth={2} />
+          <span>记录</span>
+        </button>
         <button
           type="button"
           className={`project-row__expander ${expanded ? 'is-expanded' : ''}`}

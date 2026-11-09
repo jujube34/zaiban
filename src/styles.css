@@ -1,3 +1,19 @@
+@font-face {
+  font-family: "HarmonyOS Sans SC";
+  src: url("./assets/fonts/HarmonyOS_Sans_SC_Regular.ttf") format("truetype");
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "HarmonyOS Sans SC";
+  src: url("./assets/fonts/HarmonyOS_Sans_SC_Bold.ttf") format("truetype");
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+}
+
 /* --------------------------------------------
    在办 · 基础
 --------------------------------------------- */
@@ -29,12 +45,12 @@
   --shadow-sm: 0 1px 2px rgba(38, 44, 36, 0.04);
   --shadow-md: 0 14px 40px -24px rgba(34, 42, 32, 0.35);
   --shadow-lg: 0 30px 90px -30px rgba(25, 33, 26, 0.4);
-  --font-sans: "Inter", "SF Pro Text", -apple-system, BlinkMacSystemFont, "Segoe UI",
-    "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif;
-  --font-serif: "Iowan Old Style", "Baskerville", "Songti SC", "STSong", "Noto Serif CJK SC",
-    serif;
-  --font-mono: "SFMono-Regular", "Cascadia Code", "Roboto Mono", "JetBrains Mono", Consolas,
-    monospace;
+  --font-sans: "HarmonyOS Sans SC", "Inter", "SF Pro Text", -apple-system, BlinkMacSystemFont,
+    "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif;
+  --font-serif: "HarmonyOS Sans SC", "Iowan Old Style", "Baskerville", "Songti SC", "STSong",
+    "Noto Serif CJK SC", serif;
+  --font-mono: "HarmonyOS Sans SC", "SFMono-Regular", "Cascadia Code", "Roboto Mono",
+    "JetBrains Mono", Consolas, monospace;
   --radius-sm: 4px;
   --radius-md: 7px;
   --radius-lg: 10px;
@@ -44,6 +60,7 @@
 *::before,
 *::after {
   box-sizing: border-box;
+  font-weight: 700 !important;
 }
 
 html {
@@ -936,6 +953,99 @@ kbd {
   color: var(--danger);
 }
 
+.window-controls {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  height: 36px;
+  flex: none;
+}
+
+.window-control {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 36px;
+  flex: none;
+  padding: 0;
+  border: 0;
+  border-radius: 3px;
+  background: transparent;
+  color: var(--ink-2);
+  transition:
+    background 120ms ease,
+    color 120ms ease;
+}
+
+.window-control:hover {
+  background: rgba(20, 20, 20, 0.07);
+}
+
+.window-control:active {
+  background: rgba(20, 20, 20, 0.12);
+}
+
+.window-control--close:hover {
+  background: #c42b1c;
+  color: #fff;
+}
+
+.window-control--close:active {
+  background: #9f2217;
+  color: #fff;
+}
+
+.window-control:focus-visible {
+  position: relative;
+  z-index: 1;
+  outline: 2px solid rgba(33, 72, 60, 0.55);
+  outline-offset: -2px;
+}
+
+.window-controls--floating {
+  position: fixed;
+  top: 8px;
+  right: 8px;
+  z-index: 100;
+}
+
+.app-header--window-titlebar {
+  user-select: none;
+}
+
+.app-header--window-titlebar .app-header__inner {
+  max-width: none;
+  padding-right: 0;
+}
+
+.app-header--window-titlebar .app-header__right {
+  align-self: stretch;
+  gap: 8px;
+}
+
+.app-header--window-titlebar .window-controls {
+  align-items: stretch;
+  height: 100%;
+  gap: 0;
+  margin-left: 4px;
+}
+
+.app-header--window-titlebar .window-control {
+  width: 46px;
+  height: 100%;
+  border-radius: 0;
+}
+
+.welcome--window-titlebar .welcome__header {
+  max-width: none;
+  padding-right: 8px;
+}
+
+.welcome--window-titlebar .window-controls {
+  margin-left: auto;
+}
+
 /* --------------------------------------------
    项目总览
 --------------------------------------------- */
@@ -1075,6 +1185,101 @@ kbd {
   box-shadow: 0 1px 3px rgba(50, 52, 42, 0.08);
 }
 
+.entry-sort {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+}
+
+.entry-sort__label {
+  color: var(--text);
+  font-size: 13.5px;
+  font-weight: 550;
+  white-space: nowrap;
+}
+
+.entry-sort__select-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.entry-sort__select {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 102px;
+  height: 36px;
+  padding: 0 27px 0 10px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: rgba(255, 254, 249, 0.56);
+  color: var(--text);
+  font-size: 13.5px;
+  font-weight: 550;
+  cursor: pointer;
+  transition:
+    background 130ms ease,
+    border-color 130ms ease;
+}
+
+.entry-sort__select:hover {
+  border-color: var(--line-strong);
+  background: rgba(255, 254, 249, 0.86);
+}
+
+.entry-sort__chevron {
+  position: absolute;
+  right: 8px;
+  color: var(--text);
+  pointer-events: none;
+}
+
+.entry-sort__direction {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: rgba(255, 254, 249, 0.56);
+  color: var(--text);
+  transition:
+    background 130ms ease,
+    border-color 130ms ease;
+}
+
+.entry-sort__direction:hover {
+  border-color: var(--line-strong);
+  background: rgba(255, 254, 249, 0.86);
+  color: var(--ink-2);
+}
+
+@media (max-width: 620px) {
+  .entry-sort__label {
+    display: none;
+  }
+
+  .candidate-toolbar {
+    gap: 7px;
+  }
+
+  .entry-sort {
+    gap: 4px;
+  }
+
+  .entry-sort__select {
+    width: 94px;
+    padding-left: 8px;
+  }
+
+  .entry-sort__direction {
+    width: 34px;
+  }
+}
+
 /* 项目索引：用留白与细线替代卡片堆叠 */
 .project-ledger {
   margin-top: 12px;
@@ -1084,12 +1289,8 @@ kbd {
 
 .project-row {
   display: grid;
-  grid-template-columns:
-    minmax(218px, 0.9fr)
-    minmax(260px, 1.35fr)
-    minmax(150px, 0.72fr)
-    88px
-    86px;
+  grid-template-columns: minmax(240px, 1.3fr) minmax(130px, 0.7fr) auto;
+  grid-template-areas: "primary references end";
   column-gap: clamp(14px, 1.6vw, 24px);
 }
 
@@ -1105,24 +1306,8 @@ kbd {
   transition: background 150ms ease;
 }
 
-.project-row::before {
-  content: "";
-  position: absolute;
-  left: 0;
-  top: 8px;
-  bottom: 8px;
-  width: 2px;
-  background: var(--project-accent);
-  opacity: 0;
-  transition: opacity 150ms ease;
-}
-
 .project-row:hover {
   background: rgba(255, 254, 249, 0.48);
-}
-
-.project-row:hover::before {
-  opacity: 0.55;
 }
 
 .project-row.is-expanded {
@@ -1132,10 +1317,6 @@ kbd {
 
 .project-row.is-expanded:hover {
   background: rgba(248, 245, 237, 0.8);
-}
-
-.project-row.is-expanded::before {
-  opacity: 0.62;
 }
 
 .project-row:focus-visible {
@@ -1148,6 +1329,7 @@ kbd {
 }
 
 .project-row__primary {
+  grid-area: primary;
   display: flex;
   align-items: flex-start;
   gap: 9px;
@@ -1232,67 +1414,8 @@ kbd {
   white-space: nowrap;
 }
 
-.project-row__progress {
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.project-row__latest {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  min-width: 0;
-}
-
-.project-row__latest > p {
-  flex: 1;
-  min-width: 0;
-}
-
-.project-row__latest > span {
-  flex: none;
-  padding-top: 1px;
-  color: var(--text);
-  font-size: 13px;
-  line-height: 1.35;
-  letter-spacing: 0.02em;
-  white-space: nowrap;
-}
-
-.project-row__progress p {
-  display: -webkit-box;
-  overflow: hidden;
-  color: var(--text);
-  font-size: 16.5px;
-  line-height: 1.55;
-  white-space: pre-line;
-  word-break: break-word;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-}
-
-.project-row__progress p.is-empty {
-  color: var(--text);
-  font-family: var(--font-serif);
-  font-size: 16px;
-  font-style: italic;
-}
-
-.project-row__progress p.project-row__image-note {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  -webkit-line-clamp: 1;
-}
-
-.project-row__progress p.project-row__image-note svg {
-  flex: none;
-  color: var(--text);
-}
-
 .project-row__references {
+  grid-area: references;
   min-width: 0;
   display: flex;
   flex-direction: column;
@@ -1334,21 +1457,20 @@ kbd {
   font-size: 13.5px;
 }
 
-.project-row__updated {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  color: var(--text);
-  font-size: 14px;
-  line-height: 1.35;
-  white-space: nowrap;
-}
-
 .project-row__end {
+  grid-area: end;
   display: flex;
   align-items: center;
   justify-content: flex-end;
   gap: 2px;
+}
+
+.project-row__record {
+  height: 30px;
+  padding: 0 9px;
+  margin-right: 4px;
+  gap: 4px;
+  font-size: 14.5px;
 }
 
 .project-row__expander,
@@ -2106,6 +2228,24 @@ kbd {
   background: rgba(233, 240, 229, 0.45);
 }
 
+.project-details .composer--dropdown {
+  margin: 0 0 16px;
+  padding: 11px 12px 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: rgba(255, 254, 249, 0.86);
+  box-shadow: var(--shadow-sm);
+  animation: rise-in 160ms ease both;
+}
+
+.project-details .composer--dropdown:focus-within {
+  border-color: #b9c6b4;
+}
+
+.project-details .composer--dropdown textarea {
+  min-height: 76px;
+}
+
 .composer textarea {
   display: block;
   width: 100%;
@@ -2553,14 +2693,6 @@ kbd {
   color: var(--text);
   font-size: 15.5px;
   font-weight: 570;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.reference__body small {
-  overflow: hidden;
-  color: var(--text);
-  font-size: 13.5px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -3233,28 +3365,17 @@ kbd {
   }
 
   .project-row {
-    grid-template-columns: minmax(0, 1fr) 84px;
+    grid-template-columns: minmax(0, 1fr) auto;
     grid-template-areas:
       "primary end"
-      "progress progress"
-      "references updated";
+      "references references";
     row-gap: 5px;
     min-height: 0;
     padding: 9px 6px;
   }
 
-  .project-row::before {
-    top: 7px;
-    bottom: 7px;
-  }
-
   .project-row__primary {
     grid-area: primary;
-  }
-
-  .project-row__progress {
-    grid-area: progress;
-    padding-left: 48px;
   }
 
   .project-row__references {
@@ -3263,15 +3384,6 @@ kbd {
     flex-wrap: wrap;
     gap: 3px 12px;
     padding-left: 48px;
-  }
-
-  .project-row__updated {
-    grid-area: updated;
-    flex-direction: row;
-    align-items: center;
-    gap: 6px;
-    justify-self: end;
-    font-size: 13.5px;
   }
 
   .project-row__end {
@@ -3509,14 +3621,6 @@ kbd {
 
   .project-row__parent {
     max-width: 120px;
-  }
-
-  .project-row__progress {
-    padding-left: 0;
-  }
-
-  .project-row__progress p {
-    font-size: 16.5px;
   }
 
   .project-row__references {
@@ -3778,10 +3882,6 @@ kbd {
 
   .project-row__title-line h2 {
     font-size: 21px;
-  }
-
-  .project-row__progress p {
-    font-size: 16px;
   }
 
   .modal__selection {

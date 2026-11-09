@@ -16,6 +16,7 @@ import { ProjectCard } from './components/ProjectCard'
 import { ProjectDetails } from './components/ProjectDetails'
 import { Toast, useToast } from './components/Toast'
 import { Welcome } from './components/Welcome'
+import { WindowControls } from './components/WindowControls'
 import {
   createProjectData,
   createWorkspaceData,
@@ -31,7 +32,7 @@ import {
   writeProject,
   writeWorkspace,
 } from './lib/fs'
-import { isDesktopRuntime, openInSystemFileViewer } from './lib/desktop'
+import { isDesktopRuntime, isWindowsDesktopRuntime, openInSystemFileViewer } from './lib/desktop'
 import { nowIso } from './lib/format'
 import { loadWorkspaceHandle, saveWorkspaceHandle } from './lib/idb'
 import { baseName, formatFolderPath } from './lib/paths'
@@ -124,8 +125,14 @@ function excerpt(text: string, limit = 54): string {
 }
 
 function BootScreen() {
+  const windowTitlebar = isWindowsDesktopRuntime()
+
   return (
-    <div className="boot-screen">
+    <div
+      className="boot-screen"
+      data-tauri-drag-region={windowTitlebar ? 'deep' : undefined}
+    >
+      <WindowControls className="window-controls--floating" />
       <div className="boot-screen__brand">
         <BrandMark size={42} className="brand__mark" />
         <span>在办</span>
@@ -146,6 +153,7 @@ export default function App() {
   const [saveState, setSaveState] = useState<SaveState>('idle')
   const [addProjectsOpen, setAddProjectsOpen] = useState(false)
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(() => new Set())
+  const [noteComposerFolder, setNoteComposerFolder] = useState<string | null>(null)
   const [detailsSideWidth, setDetailsSideWidth] = useState(() => {
     try {
       const raw = window.localStorage.getItem('prjm.detailsSideWidth')
@@ -189,6 +197,7 @@ export default function App() {
     setRoot(handle)
     setStoredWorkspace(handle)
     setExpandedFolders(new Set())
+    setNoteComposerFolder(null)
     setFolderState(null)
     setPreviewState(null)
     setQuery('')
@@ -458,6 +467,7 @@ export default function App() {
           for (const view of newViews) next.add(view.folder)
           return next
         })
+        setNoteComposerFolder(null)
         setSaveState('saved')
         if (failed.length > 0) {
           showToast(`已添加 ${newViews.length} 个，${failed.length} 个添加失败`, 'error')
@@ -685,6 +695,7 @@ export default function App() {
               remaining.delete(project.folder)
               return remaining
             })
+            setNoteComposerFolder((current) => (current === project.folder ? null : current))
             if (folderState?.folder === project.folder) setFolderState(null)
             if (previewState?.folder === project.folder) setPreviewState(null)
             setSaveState('saved')
@@ -757,6 +768,17 @@ export default function App() {
       }
       return next
     })
+    setNoteComposerFolder((current) => (current === project.folder ? null : current))
+  }, [])
+
+  const openNoteComposer = useCallback((project: ProjectView) => {
+    setExpandedFolders((current) => {
+      if (current.has(project.folder)) return current
+      const next = new Set(current)
+      next.add(project.folder)
+      return next
+    })
+    setNoteComposerFolder(project.folder)
   }, [])
 
   const showDetails = useCallback((project: ProjectView) => {
@@ -903,6 +925,7 @@ export default function App() {
                       onToggleDetails={toggleDetails}
                       onShowDetails={showDetails}
                       onOpenFolder={(item) => openFolder(item)}
+                      onRecord={openNoteComposer}
                       onStopTracking={stopTracking}
                       onPreviewReference={previewReference}
                     />
@@ -910,8 +933,12 @@ export default function App() {
                       <ProjectDetails
                         project={project}
                         saving={saveState === 'saving'}
+                        noteComposerOpen={noteComposerFolder === project.folder}
                         sideWidth={detailsSideWidth}
                         onSideWidthChange={(width) => setDetailsSideWidth(width)}
+                        onNoteComposerOpenChange={(open) =>
+                          setNoteComposerFolder(open ? project.folder : null)
+                        }
                         onAddNote={(body, images) => addNote(project, body, images)}
                         onEditNote={(noteId, body) => editNote(project, noteId, body)}
                         onDeleteNote={(note) => requestDeleteNote(project, note)}

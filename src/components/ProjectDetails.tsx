@@ -33,8 +33,10 @@ import { ResizableImage } from './ResizableImage'
 interface ProjectDetailsProps {
   project: ProjectView
   saving: boolean
+  noteComposerOpen: boolean
   sideWidth: number
   onSideWidthChange: (width: number) => void
+  onNoteComposerOpenChange: (open: boolean) => void
   onAddNote: (body: string, images: DraftNoteImage[]) => Promise<boolean>
   onEditNote: (noteId: string, body: string) => Promise<boolean>
   onDeleteNote: (note: ProjectNote) => void
@@ -56,8 +58,10 @@ function isEdited(note: ProjectNote): boolean {
 export function ProjectDetails({
   project,
   saving,
+  noteComposerOpen: composerOpen,
   sideWidth,
   onSideWidthChange,
+  onNoteComposerOpenChange: setComposerOpen,
   onAddNote,
   onEditNote,
   onDeleteNote,
@@ -93,7 +97,8 @@ export function ProjectDetails({
     if (!textarea) return
     textarea.style.height = 'auto'
     textarea.style.height = `${Math.min(textarea.scrollHeight, 220)}px`
-  }, [draft])
+    if (composerOpen) textarea.focus()
+  }, [composerOpen, draft])
 
   useEffect(
     () => () => {
@@ -163,6 +168,7 @@ export function ProjectDetails({
       if (success) {
         setDraft('')
         releaseImages()
+        setComposerOpen(false)
       }
     } finally {
       setSubmitting(false)
@@ -173,6 +179,11 @@ export function ProjectDetails({
     if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') {
       event.preventDefault()
       void submitNote()
+      return
+    }
+    if (event.key === 'Escape') {
+      event.stopPropagation()
+      setComposerOpen(false)
     }
   }
 
@@ -310,55 +321,64 @@ export function ProjectDetails({
           </div>
         ) : (
           <>
-            <div
-              className={`composer ${dragging ? 'is-dragging' : ''}`}
-              onDragEnter={handleDragEnter}
-              onDragOver={handleDragOver}
-              onDragLeave={handleDragLeave}
-              onDrop={handleDrop}
-              onPaste={handlePaste}
-            >
-              <textarea
-                ref={composerRef}
-                value={draft}
-                onChange={(event) => setDraft(event.target.value)}
-                onKeyDown={handleComposerKey}
-                rows={1}
-                aria-label="记录项目进展"
-              />
+            <section className="details-section details-section--notes">
+              {composerOpen && (
+                <div
+                  id="project-note-composer"
+                  className={["composer composer--dropdown", dragging ? "is-dragging" : ""].filter(Boolean).join(" ")}
+                  onDragEnter={handleDragEnter}
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                  onDrop={handleDrop}
+                  onPaste={handlePaste}
+                >
+                  <textarea
+                    ref={composerRef}
+                    value={draft}
+                    onChange={(event) => setDraft(event.target.value)}
+                    onKeyDown={handleComposerKey}
+                    rows={3}
+                    placeholder="记录项目进展…"
+                    aria-label="记录项目进展"
+                  />
 
-              {draftImages.length > 0 && (
-                <div className="composer__images">
-                  {draftImages.map((image) => (
-                    <ResizableImage
-                      key={image.id}
-                      src={image.url}
-                      alt={image.name}
-                      width={image.width}
-                      onResize={(width) => resizeImage(image.id, width)}
-                      onRemove={() => removeImage(image.id)}
-                    />
-                  ))}
+                  {draftImages.length > 0 && (
+                    <div className="composer__images">
+                      {draftImages.map((image) => (
+                        <ResizableImage
+                          key={image.id}
+                          src={image.url}
+                          alt={image.name}
+                          width={image.width}
+                          onResize={(width) => resizeImage(image.id, width)}
+                          onRemove={() => removeImage(image.id)}
+                        />
+                      ))}
+                    </div>
+                  )}
+
+                  <div className="composer__foot">
+                    <button
+                      type="button"
+                      className="button button--ghost button--compact"
+                      onClick={() => setComposerOpen(false)}
+                      disabled={submitting}
+                    >
+                      取消
+                    </button>
+                    <button
+                      type="button"
+                      className="button button--primary button--compact"
+                      onClick={() => void submitNote()}
+                      disabled={!hasContent || submitting || saving}
+                    >
+                      {submitting ? <Loader2 size={15} className="spin" /> : <Check size={15} strokeWidth={2.2} />}
+                      {submitting ? '保存中…' : '保存'}
+                    </button>
+                  </div>
                 </div>
               )}
 
-              <div className="composer__foot">
-                <button
-                  type="button"
-                  className="button button--primary button--compact"
-                  onClick={() => void submitNote()}
-                  disabled={!hasContent || submitting || saving}
-                >
-                  {submitting ? <Loader2 size={15} className="spin" /> : <Check size={15} strokeWidth={2.2} />}
-                  {submitting ? '保存中' : '记录'}
-                </button>
-              </div>
-            </div>
-
-            <section className="details-section">
-              <div className="section-heading">
-                <h2>全部笔记</h2>
-              </div>
               {project.data.notes.length > 0 && (
                 <div className="note-list">
                   {project.data.notes.map((note) => (
@@ -424,7 +444,6 @@ export function ProjectDetails({
                       <span className="reference__icon"><Icon size={17} strokeWidth={1.7} /></span>
                       <span className="reference__body">
                         <strong>{reference.name}</strong>
-                        <small>{reference.path}</small>
                       </span>
                       <span className="reference__open">预览</span>
                     </button>
