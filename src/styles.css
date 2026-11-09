@@ -1560,7 +1560,6 @@ kbd {
 .project-details__splitter {
   position: relative;
   align-self: stretch;
-  min-height: 100%;
   cursor: col-resize;
   touch-action: none;
   outline: none;
@@ -2457,16 +2456,16 @@ kbd {
   display: flex;
   flex-direction: column;
   align-items: center;
-  width: 7px;
+  width: 10px;
   flex: none;
-  padding-top: 6px;
+  padding-top: 7px;
 }
 
 .note__dot {
-  width: 5px;
-  height: 5px;
+  width: 10px;
+  height: 10px;
   flex: none;
-  border: 1px solid #9fae98;
+  border: 1.5px solid #9fae98;
   border-radius: 50%;
   background: #f1eee4;
 }
@@ -2480,7 +2479,7 @@ kbd {
   width: 1px;
   flex: 1;
   min-height: 14px;
-  margin-top: 5px;
+  margin-top: 7px;
   background: #ded8cb;
 }
 
@@ -2593,17 +2592,46 @@ kbd {
 }
 
 .note__expand {
-  margin-top: 4px;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  color: var(--text);
-  font-size: 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 8px;
+  padding: 4px 11px 4px 12px;
+  border: 1px solid #c6d3c2;
+  border-radius: 999px;
+  background: var(--green-soft);
+  color: var(--green-deep);
+  box-shadow: 0 1px 2px rgba(33, 72, 60, 0.07);
+  font-size: 13.5px;
   font-weight: 600;
+  letter-spacing: 0.02em;
+  line-height: 1.4;
+  cursor: pointer;
+  transition:
+    background 140ms ease,
+    border-color 140ms ease,
+    color 140ms ease,
+    transform 140ms ease;
+}
+
+.note__expand svg {
+  flex: none;
+  opacity: 0.8;
+  transition: transform 160ms ease;
 }
 
 .note__expand:hover {
-  color: var(--green);
+  border-color: var(--green);
+  background: var(--green);
+  color: #fdfbf6;
+}
+
+.note__expand:hover svg {
+  opacity: 1;
+}
+
+.note__expand:active {
+  transform: translateY(1px);
 }
 
 .note-editor {

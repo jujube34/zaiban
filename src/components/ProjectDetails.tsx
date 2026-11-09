@@ -1,5 +1,7 @@
 import {
   Check,
+  ChevronDown,
+  ChevronUp,
   Loader2,
   Pencil,
   Plus,
@@ -568,8 +570,18 @@ function NoteRow({
                 <>
                   <p className={`note__text ${isLong && !expanded ? 'is-clamped' : ''}`}>{note.body}</p>
                   {isLong && (
-                    <button type="button" className="note__expand" onClick={() => setExpanded((current) => !current)}>
+                    <button
+                      type="button"
+                      className="note__expand"
+                      aria-expanded={expanded}
+                      onClick={() => setExpanded((current) => !current)}
+                    >
                       {expanded ? '收起' : '展开全部'}
+                      {expanded ? (
+                        <ChevronUp size={15} strokeWidth={2.2} />
+                      ) : (
+                        <ChevronDown size={15} strokeWidth={2.2} />
+                      )}
                     </button>
                   )}
                 </>

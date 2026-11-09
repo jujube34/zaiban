@@ -370,6 +370,19 @@ export async function openInSystemFileViewer(
   })
 }
 
+export async function openFolderInSystemFileViewer(
+  handle: FileSystemDirectoryHandle,
+): Promise<void> {
+  const location = handle as unknown as { root?: unknown; path?: unknown }
+  if (typeof location.root !== 'string' || typeof location.path !== 'string') {
+    throw new Error('当前文件句柄不支持系统打开')
+  }
+  await tauriInvoke<void>('open_folder_in_system', {
+    root: location.root,
+    path: location.path,
+  })
+}
+
 export async function loadDesktopWorkspaceRoot(): Promise<FileSystemDirectoryHandle | null> {
   let root = ''
   try {

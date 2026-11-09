@@ -258,6 +258,19 @@ async fn preview_file_in_system(root: String, path: String) -> Result<String, St
 }
 
 #[tauri::command]
+async fn open_folder_in_system(root: String, path: String) -> Result<(), String> {
+    blocking(move || {
+        let folder = resolve(&root, &path)?;
+        if !folder.is_dir() {
+            return Err(format!("文件夹不存在或不可访问：{}", folder.display()));
+        }
+        open_with_default_app(&folder)
+            .map_err(|error| format!("无法在系统文件管理器中打开文件夹：{error}"))
+    })
+    .await
+}
+
+#[tauri::command]
 async fn path_kind(path: String) -> Result<Option<String>, String> {
     blocking(move || {
         let path = PathBuf::from(path);
@@ -352,6 +365,7 @@ fn main() {
             pick_workspace_directory,
             path_kind,
             preview_file_in_system,
+            open_folder_in_system,
             list_directory,
             read_binary_file,
             write_binary_file,

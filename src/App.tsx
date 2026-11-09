@@ -32,7 +32,7 @@ import {
   writeProject,
   writeWorkspace,
 } from './lib/fs'
-import { isDesktopRuntime, isWindowsDesktopRuntime, openInSystemFileViewer } from './lib/desktop'
+import { isDesktopRuntime, isWindowsDesktopRuntime, openFolderInSystemFileViewer, openInSystemFileViewer } from './lib/desktop'
 import { nowIso } from './lib/format'
 import { loadWorkspaceHandle, saveWorkspaceHandle } from './lib/idb'
 import { baseName, formatFolderPath } from './lib/paths'
@@ -721,6 +721,25 @@ export default function App() {
     [showToast],
   )
 
+  const openFolderInSystem = useCallback(
+    (project: ProjectView) => {
+      if (project.missing || !project.handle) {
+        showToast('项目文件夹不可用，无法打开', 'error')
+        return
+      }
+
+      if (!isDesktopRuntime()) {
+        setFolderState({ folder: project.folder, intent: 'browse' })
+        return
+      }
+
+      void openFolderInSystemFileViewer(project.handle).catch((caught) => {
+        showToast(friendlyFsError(caught), 'error')
+      })
+    },
+    [showToast],
+  )
+
   const previewReference = useCallback(
     (project: ProjectView, reference: ProjectReference) => {
       if (project.missing || !project.handle) {
@@ -925,6 +944,7 @@ export default function App() {
                       onToggleDetails={toggleDetails}
                       onShowDetails={showDetails}
                       onOpenFolder={(item) => openFolder(item)}
+                      onOpenFolderInSystem={openFolderInSystem}
                       onRecord={openNoteComposer}
                       onStopTracking={stopTracking}
                       onPreviewReference={previewReference}

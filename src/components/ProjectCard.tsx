@@ -1,5 +1,5 @@
 import { ChevronRight, FolderOpen, Plus, StopCircle, TriangleAlert } from 'lucide-react'
-import { useEffect, useRef, type CSSProperties, type KeyboardEvent, type MouseEvent } from 'react'
+import { useRef, type CSSProperties, type KeyboardEvent, type MouseEvent } from 'react'
 import type { ProjectReference, ProjectView } from '../types'
 import { fileIconFor } from '../lib/files'
 import { baseName, compactFolderPath, formatFolderPath, parentPath } from '../lib/paths'
@@ -11,6 +11,7 @@ interface ProjectCardProps {
   onToggleDetails: (project: ProjectView) => void
   onShowDetails: (project: ProjectView) => void
   onOpenFolder: (project: ProjectView) => void
+  onOpenFolderInSystem: (project: ProjectView) => void
   onRecord: (project: ProjectView) => void
   onStopTracking: (project: ProjectView) => void
   onPreviewReference: (project: ProjectView, reference: ProjectReference) => void
@@ -22,6 +23,7 @@ export function ProjectCard({
   onToggleDetails,
   onShowDetails,
   onOpenFolder,
+  onOpenFolderInSystem,
   onRecord,
   onStopTracking,
   onPreviewReference,
@@ -37,36 +39,20 @@ export function ProjectCard({
       : null
   const visibleReferences = data.references.slice(0, 2)
   const extraReferences = data.references.length - visibleReferences.length
-  const clickTimer = useRef<number | null>(null)
+  const lastSystemOpen = useRef(0)
 
-  useEffect(
-    () => () => {
-      if (clickTimer.current) window.clearTimeout(clickTimer.current)
-    },
-    [],
-  )
-
-  const handleCardClick = () => {
-    if (clickTimer.current) window.clearTimeout(clickTimer.current)
-    clickTimer.current = window.setTimeout(() => {
-      clickTimer.current = null
-      onToggleDetails(project)
-    }, 220)
-  }
-
-  const handleCardDoubleClick = () => {
-    if (clickTimer.current) {
-      window.clearTimeout(clickTimer.current)
-      clickTimer.current = null
-    }
-    onOpenFolder(project)
+  const openFolderInSystem = () => {
+    const now = Date.now()
+    if (now - lastSystemOpen.current < 350) return
+    lastSystemOpen.current = now
+    onOpenFolderInSystem(project)
   }
 
   const handleCardKey = (event: KeyboardEvent<HTMLElement>) => {
     if (event.target !== event.currentTarget) return
     if (event.key === 'Enter' || event.key === ' ') {
       event.preventDefault()
-      onToggleDetails(project)
+      openFolderInSystem()
     }
   }
 
@@ -78,10 +64,9 @@ export function ProjectCard({
       style={{ '--project-accent': accent } as CSSProperties}
       tabIndex={0}
       role="button"
-      aria-expanded={expanded}
-      aria-label={`${expanded ? '收起' : '展开'}项目 ${formatFolderPath(project.folder, ' / ')} 的笔记`}
-      onClick={handleCardClick}
-      onDoubleClick={handleCardDoubleClick}
+      aria-label={`在系统文件管理器中打开项目 ${formatFolderPath(project.folder, ' / ')} 的文件夹`}
+      title="在系统文件管理器中打开项目文件夹"
+      onClick={openFolderInSystem}
       onKeyDown={handleCardKey}
     >
       <div className="project-row__primary">
