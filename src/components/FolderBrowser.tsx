@@ -18,6 +18,9 @@ import { fileIconFor } from '../lib/files'
 import { baseName, formatFolderPath } from '../lib/paths'
 import {
   compareSortableEntries,
+  defaultDirectionFor,
+  loadSortPreference,
+  saveSortPreference,
   type EntrySortField,
   type SortDirection,
 } from '../lib/sort'
@@ -50,8 +53,13 @@ export function FolderBrowser({
   const [selected, setSelected] = useState<string | null>(null)
   const [refreshKey, setRefreshKey] = useState(0)
   const [pinning, setPinning] = useState<string | null>(null)
-  const [sortField, setSortField] = useState<EntrySortField>('name')
-  const [sortDirection, setSortDirection] = useState<SortDirection>('asc')
+  const [initialSort] = useState(loadSortPreference)
+  const [sortField, setSortField] = useState<EntrySortField>(initialSort.field)
+  const [sortDirection, setSortDirection] = useState<SortDirection>(initialSort.direction)
+
+  useEffect(() => {
+    saveSortPreference({ field: sortField, direction: sortDirection })
+  }, [sortField, sortDirection])
 
   const pinnedPaths = useMemo(
     () => new Set(project.data.references.map((reference) => reference.path)),
@@ -70,7 +78,7 @@ export function FolderBrowser({
       setSelected(null)
       try {
         const directory = await getDirectoryByPath(project.handle, segments)
-        const items = await listDirectory(directory, segments.length === 0)
+        const items = await listDirectory(directory)
         if (cancelled) return
         setEntries(items)
         setState('ready')
@@ -99,7 +107,7 @@ export function FolderBrowser({
 
   const changeSortField = (field: EntrySortField) => {
     setSortField(field)
-    setSortDirection(field === 'name' ? 'asc' : 'desc')
+    setSortDirection(defaultDirectionFor(field))
   }
 
   const toggleSortDirection = () => {

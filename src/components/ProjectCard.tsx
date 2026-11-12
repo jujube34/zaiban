@@ -7,6 +7,7 @@ import { accentFor, monogramFor } from '../lib/projectVisual'
 
 interface ProjectCardProps {
   project: ProjectView
+  striped: boolean
   expanded: boolean
   onToggleDetails: (project: ProjectView) => void
   onShowDetails: (project: ProjectView) => void
@@ -19,6 +20,7 @@ interface ProjectCardProps {
 
 export function ProjectCard({
   project,
+  striped,
   expanded,
   onToggleDetails,
   onShowDetails,
@@ -60,7 +62,7 @@ export function ProjectCard({
 
   return (
     <article
-      className={`project-row ${issue ? 'project-row--issue' : ''} ${expanded ? 'is-expanded' : ''}`}
+      className={`project-row ${issue ? 'project-row--issue' : ''} ${striped ? 'project-row--striped' : ''} ${expanded ? 'is-expanded' : ''}`}
       style={{ '--project-accent': accent } as CSSProperties}
       tabIndex={0}
       role="button"

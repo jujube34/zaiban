@@ -2,9 +2,7 @@ import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'rea
 import {
   FolderPlus,
   Plus,
-  Search,
   SearchX,
-  X,
 } from 'lucide-react'
 import { AddProjectsModal } from './components/AddProjectsModal'
 import { BrandMark } from './components/Brand'
@@ -906,6 +904,12 @@ export default function App() {
         workspaceName={workspaceName}
         saveState={saveState}
         canInstall={canInstall}
+        query={query}
+        onQueryChange={setQuery}
+        sort={sort}
+        onSortChange={setSort}
+        searchInputRef={searchRef}
+        showTools={hasProjects}
         onAddProject={() => setAddProjectsOpen(true)}
         onRefresh={() => void refreshWorkspace()}
         onSwitchWorkspace={() => void chooseWorkspace()}
@@ -914,71 +918,15 @@ export default function App() {
       />
 
       <main className="dashboard">
-        <section className="dashboard__head">
-          {hasProjects && (
-            <div className="dashboard__tools">
-              <label className="search-field">
-                <Search size={16} strokeWidth={1.8} />
-                <input
-                  ref={searchRef}
-                  type="search"
-                  value={query}
-                  onChange={(event) => setQuery(event.target.value)}
-                  onKeyDown={(event) => {
-                    if (event.key === 'Escape') {
-                      setQuery('')
-                      event.currentTarget.blur()
-                    }
-                  }}
-                  placeholder="搜索项目、笔记或文件"
-                  aria-label="搜索项目、笔记或文件"
-                />
-                {query ? (
-                  <button
-                    type="button"
-                    className="search-field__clear"
-                    onClick={() => setQuery('')}
-                    aria-label="清空搜索"
-                  >
-                    <X size={14} />
-                  </button>
-                ) : (
-                  <kbd className="search-field__shortcut">/</kbd>
-                )}
-              </label>
-              <div className="sort-control">
-                <span className="sort-label" id="project-sort-label">排序：</span>
-                <div className="sort-switch" role="group" aria-labelledby="project-sort-label">
-                  <button
-                    type="button"
-                    className={sort === 'recent' ? 'is-active' : ''}
-                    onClick={() => setSort('recent')}
-                    aria-pressed={sort === 'recent'}
-                  >
-                    最近更新
-                  </button>
-                  <button
-                    type="button"
-                    className={sort === 'name' ? 'is-active' : ''}
-                    onClick={() => setSort('name')}
-                    aria-pressed={sort === 'name'}
-                  >
-                    名称
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-        </section>
-
         {hasProjects ? (
           <>
             {filteredProjects.length > 0 ? (
               <section className="project-ledger" aria-label="进行中的项目">
-                {filteredProjects.map((project) => (
+                {filteredProjects.map((project, index) => (
                   <Fragment key={project.folder}>
                     <ProjectCard
                       project={project}
+                      striped={index % 2 === 1}
                       expanded={expandedFolders.has(project.folder)}
                       onToggleDetails={toggleDetails}
                       onShowDetails={showDetails}

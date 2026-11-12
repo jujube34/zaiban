@@ -395,12 +395,12 @@ export async function getFileByPath(
 
 export async function listDirectory(
   directory: FileSystemDirectoryHandle,
-  hideAppDirectory = false,
 ): Promise<FolderEntry[]> {
   const entries: FolderEntry[] = []
 
   for await (const [name, handle] of directory.entries()) {
-    if (hideAppDirectory && name === APP_DIR) continue
+    // Hidden entries (dot-prefixed, including the app's own .prjm folder) never appear.
+    if (name.startsWith('.')) continue
     if (handle.kind === 'directory') {
       const directoryHandle = handle as FileSystemDirectoryHandle
       const metadata = readDesktopHandleMetadata(directoryHandle)

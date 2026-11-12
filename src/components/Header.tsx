@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type RefObject } from 'react'
 import {
   Check,
   ChevronDown,
@@ -8,8 +8,10 @@ import {
   Loader2,
   Plus,
   RotateCw,
+  Search,
   Smartphone,
   TriangleAlert,
+  X,
 } from 'lucide-react'
 import type { SaveState } from '../types'
 import { isWindowsDesktopRuntime } from '../lib/desktop'
@@ -20,6 +22,12 @@ interface HeaderProps {
   workspaceName: string
   saveState: SaveState
   canInstall: boolean
+  query: string
+  onQueryChange: (value: string) => void
+  sort: 'recent' | 'name'
+  onSortChange: (sort: 'recent' | 'name') => void
+  searchInputRef: RefObject<HTMLInputElement | null>
+  showTools: boolean
   onAddProject: () => void
   onRefresh: () => void
   onSwitchWorkspace: () => void
@@ -31,6 +39,12 @@ export function Header({
   workspaceName,
   saveState,
   canInstall,
+  query,
+  onQueryChange,
+  sort,
+  onSortChange,
+  searchInputRef,
+  showTools,
   onAddProject,
   onRefresh,
   onSwitchWorkspace,
@@ -142,6 +156,61 @@ export function Header({
             )}
           </div>
         </div>
+
+        {showTools && (
+          <div className="app-header__tools">
+            <label className="search-field">
+              <Search size={16} strokeWidth={1.8} />
+              <input
+                ref={searchInputRef}
+                type="search"
+                value={query}
+                onChange={(event) => onQueryChange(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Escape') {
+                    onQueryChange('')
+                    event.currentTarget.blur()
+                  }
+                }}
+                placeholder="搜索项目、笔记或文件"
+                aria-label="搜索项目、笔记或文件"
+              />
+              {query ? (
+                <button
+                  type="button"
+                  className="search-field__clear"
+                  onClick={() => onQueryChange('')}
+                  aria-label="清空搜索"
+                >
+                  <X size={14} />
+                </button>
+              ) : (
+                <kbd className="search-field__shortcut">/</kbd>
+              )}
+            </label>
+            <div className="sort-control">
+              <span className="sort-label" id="project-sort-label">排序：</span>
+              <div className="sort-switch" role="group" aria-labelledby="project-sort-label">
+                <button
+                  type="button"
+                  className={sort === 'recent' ? 'is-active' : ''}
+                  onClick={() => onSortChange('recent')}
+                  aria-pressed={sort === 'recent'}
+                >
+                  最近更新
+                </button>
+                <button
+                  type="button"
+                  className={sort === 'name' ? 'is-active' : ''}
+                  onClick={() => onSortChange('name')}
+                  aria-pressed={sort === 'name'}
+                >
+                  名称
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className="app-header__right">
           <span className={`save-status save-status--${saveState}`} aria-live="polite">
