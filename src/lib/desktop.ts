@@ -46,6 +46,16 @@ export function isWindowsDesktopRuntime(): boolean {
   return /Windows/i.test(navigator.userAgent)
 }
 
+export function isAndroidDesktopRuntime(): boolean {
+  if (!isDesktopRuntime() || typeof navigator === 'undefined') return false
+  return /Android/i.test(navigator.userAgent)
+}
+
+export function isSystemFileViewerRuntime(): boolean {
+  if (!isDesktopRuntime() || typeof navigator === 'undefined') return false
+  return isWindowsDesktopRuntime() || /Macintosh|Mac OS X/i.test(navigator.userAgent)
+}
+
 export function getDesktopWindowHandle(): DesktopWindowHandle | null {
   if (typeof window === 'undefined') return null
   const getCurrentWindow = (window as WindowWithTauri).__TAURI__?.window?.getCurrentWindow
@@ -63,6 +73,11 @@ function normalizeRelativePath(path: string): string {
 function pathBaseName(path: string): string {
   const parts = path.replaceAll('\\', '/').split('/').filter(Boolean)
   return parts.length > 0 ? parts[parts.length - 1] : path
+}
+
+function rootDisplayName(root: string): string {
+  if (root === '/storage/emulated/0' || root === '/sdcard') return '内部存储'
+  return pathBaseName(root) || root
 }
 
 function childPath(parent: string, name: string): string {
@@ -234,7 +249,7 @@ class DesktopDirectoryHandle {
     createdAt?: number,
     lastModified?: number,
   ) {
-    this.name = name || pathBaseName(path) || pathBaseName(root) || root
+    this.name = name || pathBaseName(path) || rootDisplayName(root)
     this.__zaibanDesktopModified = lastModified
     this.__zaibanDesktopCreated = createdAt
   }

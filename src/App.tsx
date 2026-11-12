@@ -16,6 +16,7 @@ import { ProjectCard } from './components/ProjectCard'
 import { ProjectDetails } from './components/ProjectDetails'
 import { Toast, useToast } from './components/Toast'
 import { Welcome } from './components/Welcome'
+import { WorkspacePicker } from './components/WorkspacePicker'
 import { WindowControls } from './components/WindowControls'
 import {
   createProjectData,
@@ -32,7 +33,15 @@ import {
   writeProject,
   writeWorkspace,
 } from './lib/fs'
-import { isDesktopRuntime, isWindowsDesktopRuntime, openFolderInSystemFileViewer, openInSystemFileViewer } from './lib/desktop'
+import {
+  createDesktopRootHandle,
+  isAndroidDesktopRuntime,
+  isDesktopRuntime,
+  isSystemFileViewerRuntime,
+  isWindowsDesktopRuntime,
+  openFolderInSystemFileViewer,
+  openInSystemFileViewer,
+} from './lib/desktop'
 import { nowIso } from './lib/format'
 import { loadWorkspaceHandle, saveWorkspaceHandle } from './lib/idb'
 import { baseName, formatFolderPath } from './lib/paths'
@@ -152,6 +161,7 @@ export default function App() {
   const [projects, setProjects] = useState<ProjectView[]>([])
   const [saveState, setSaveState] = useState<SaveState>('idle')
   const [addProjectsOpen, setAddProjectsOpen] = useState(false)
+  const [workspacePickerOpen, setWorkspacePickerOpen] = useState(false)
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(() => new Set())
   const [noteComposerFolder, setNoteComposerFolder] = useState<string | null>(null)
   const [detailsSideWidth, setDetailsSideWidth] = useState(() => {
@@ -318,9 +328,31 @@ export default function App() {
     return () => document.removeEventListener('keydown', onKeyDown)
   }, [boot])
 
+  const applyWorkspacePath = useCallback(
+    async (path: string) => {
+      setStarting(true)
+      try {
+        const handle = createDesktopRootHandle(path)
+        await enterWorkspace(handle)
+        await saveWorkspaceHandle(handle).catch(() => undefined)
+        setStoredWorkspace(handle)
+        setWorkspacePickerOpen(false)
+      } catch (caught) {
+        showToast(friendlyFsError(caught), 'error')
+      } finally {
+        setStarting(false)
+      }
+    },
+    [enterWorkspace, showToast],
+  )
+
   const chooseWorkspace = useCallback(async () => {
     if (!supportsFileSystemAccess()) {
       showToast('当前环境不支持选择本地文件夹', 'error')
+      return
+    }
+    if (isAndroidDesktopRuntime()) {
+      setWorkspacePickerOpen(true)
       return
     }
     setStarting(true)
@@ -728,7 +760,7 @@ export default function App() {
         return
       }
 
-      if (!isDesktopRuntime()) {
+      if (!isSystemFileViewerRuntime()) {
         setFolderState({ folder: project.folder, intent: 'browse' })
         return
       }
@@ -747,7 +779,7 @@ export default function App() {
         return
       }
 
-      if (isDesktopRuntime()) {
+      if (isSystemFileViewerRuntime()) {
         setPreviewState(null)
         void openInSystemFileViewer(project.handle, reference.path).catch((caught) => {
           showToast(friendlyFsError(caught), 'error')
@@ -856,6 +888,13 @@ export default function App() {
           onChoose={() => void chooseWorkspace()}
           onResume={() => void resumeWorkspace()}
         />
+        {workspacePickerOpen && (
+          <WorkspacePicker
+            busy={starting}
+            onClose={() => setWorkspacePickerOpen(false)}
+            onSelect={(path) => void applyWorkspacePath(path)}
+          />
+        )}
         <Toast toast={toast} onDismiss={dismissToast} />
       </>
     )
@@ -1043,6 +1082,14 @@ export default function App() {
 
       {confirmSpec && (
         <ConfirmDialog spec={confirmSpec} onClose={() => setConfirmSpec(null)} />
+      )}
+
+      {workspacePickerOpen && (
+        <WorkspacePicker
+          busy={starting}
+          onClose={() => setWorkspacePickerOpen(false)}
+          onSelect={(path) => void applyWorkspacePath(path)}
+        />
       )}
 
       <Toast toast={toast} onDismiss={dismissToast} />
