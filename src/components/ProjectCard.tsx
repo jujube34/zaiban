@@ -1,7 +1,6 @@
 import { ChevronRight, FolderOpen, Plus, StopCircle, TriangleAlert } from 'lucide-react'
 import { useRef, type CSSProperties, type KeyboardEvent, type MouseEvent } from 'react'
-import type { ProjectReference, ProjectView } from '../types'
-import { fileIconFor } from '../lib/files'
+import type { ProjectView } from '../types'
 import { baseName, compactFolderPath, formatFolderPath, parentPath } from '../lib/paths'
 import { accentFor, monogramFor } from '../lib/projectVisual'
 
@@ -10,12 +9,10 @@ interface ProjectCardProps {
   striped: boolean
   expanded: boolean
   onToggleDetails: (project: ProjectView) => void
-  onShowDetails: (project: ProjectView) => void
   onOpenFolder: (project: ProjectView) => void
   onOpenFolderInSystem: (project: ProjectView) => void
   onRecord: (project: ProjectView) => void
   onStopTracking: (project: ProjectView) => void
-  onPreviewReference: (project: ProjectView, reference: ProjectReference) => void
 }
 
 export function ProjectCard({
@@ -23,14 +20,11 @@ export function ProjectCard({
   striped,
   expanded,
   onToggleDetails,
-  onShowDetails,
   onOpenFolder,
   onOpenFolderInSystem,
   onRecord,
   onStopTracking,
-  onPreviewReference,
 }: ProjectCardProps) {
-  const { data } = project
   const displayName = baseName(project.folder)
   const parent = parentPath(project.folder)
   const accent = accentFor(project.folder)
@@ -39,8 +33,6 @@ export function ProjectCard({
     : project.loadError
       ? '记录文件无法读取'
       : null
-  const visibleReferences = data.references.slice(0, 2)
-  const extraReferences = data.references.length - visibleReferences.length
   const lastSystemOpen = useRef(0)
 
   const openFolderInSystem = () => {
@@ -93,61 +85,23 @@ export function ProjectCard({
         </div>
       </div>
 
-      <div className="project-row__references" aria-label="重点文件">
-        {visibleReferences.length > 0 && (
-          <>
-            {visibleReferences.map((reference) => {
-              const Icon = fileIconFor(reference.name)
-              return (
-                <button
-                  type="button"
-                  className="file-link"
-                  key={reference.id}
-                  title={`预览 ${reference.path}`}
-                  onClick={(event) => {
-                    stop(event)
-                    onPreviewReference(project, reference)
-                  }}
-                  onDoubleClick={stop}
-                >
-                  <Icon size={13} strokeWidth={1.8} />
-                  <span>{reference.name}</span>
-                </button>
-              )
-            })}
-            {extraReferences > 0 && (
-              <button
-                type="button"
-                className="file-link file-link--more"
-                onClick={(event) => {
-                  stop(event)
-                  onShowDetails(project)
-                }}
-                onDoubleClick={stop}
-              >
-                +{extraReferences}
-              </button>
-            )}
-          </>
-        )}
-      </div>
+      <button
+        type="button"
+        className="button button--primary button--compact project-row__record"
+        onClick={(event) => {
+          stop(event)
+          onRecord(project)
+        }}
+        onDoubleClick={stop}
+        aria-label={`记录 ${displayName} 的项目进展`}
+        title="记录项目进展"
+        disabled={Boolean(issue)}
+      >
+        <Plus size={14} strokeWidth={2} />
+        <span>记录</span>
+      </button>
 
       <div className="project-row__end">
-        <button
-          type="button"
-          className="button button--primary button--compact project-row__record"
-          onClick={(event) => {
-            stop(event)
-            onRecord(project)
-          }}
-          onDoubleClick={stop}
-          aria-label={`记录 ${displayName} 的项目进展`}
-          title="记录项目进展"
-          disabled={Boolean(issue)}
-        >
-          <Plus size={14} strokeWidth={2} />
-          <span>记录</span>
-        </button>
         <button
           type="button"
           className={`project-row__expander ${expanded ? 'is-expanded' : ''}`}

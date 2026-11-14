@@ -1,4 +1,4 @@
-import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import {
   FolderPlus,
   Plus,
@@ -830,15 +830,6 @@ export default function App() {
     setNoteComposerFolder(project.folder)
   }, [])
 
-  const showDetails = useCallback((project: ProjectView) => {
-    setExpandedFolders((current) => {
-      if (current.has(project.folder)) return current
-      const next = new Set(current)
-      next.add(project.folder)
-      return next
-    })
-  }, [])
-
   const filteredProjects = useMemo(() => {
     const normalized = query.trim().toLowerCase()
     const result = normalized
@@ -921,7 +912,11 @@ export default function App() {
         {hasProjects ? (
           <>
             {filteredProjects.length > 0 ? (
-              <section className="project-ledger" aria-label="进行中的项目">
+              <section
+                className="project-ledger"
+                aria-label="进行中的项目"
+                style={{ '--details-side-width': `${detailsSideWidth}px` } as CSSProperties}
+              >
                 {filteredProjects.map((project, index) => (
                   <Fragment key={project.folder}>
                     <ProjectCard
@@ -929,12 +924,10 @@ export default function App() {
                       striped={index % 2 === 1}
                       expanded={expandedFolders.has(project.folder)}
                       onToggleDetails={toggleDetails}
-                      onShowDetails={showDetails}
                       onOpenFolder={(item) => openFolder(item)}
                       onOpenFolderInSystem={openFolderInSystem}
                       onRecord={openNoteComposer}
                       onStopTracking={stopTracking}
-                      onPreviewReference={previewReference}
                     />
                     {expandedFolders.has(project.folder) && (
                       <ProjectDetails

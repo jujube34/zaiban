@@ -1310,11 +1310,13 @@ kbd {
   animation: fade-in 300ms ease both;
 }
 
+/* 项目行：单行 grid，记录按钮与下方分隔线对齐 */
 .project-row {
+  --project-tools-width: 86px;
   display: grid;
-  grid-template-columns: minmax(240px, 1.3fr) minmax(130px, 0.7fr) auto;
-  grid-template-areas: "primary references end";
-  column-gap: clamp(14px, 1.6vw, 24px);
+  grid-template-columns: minmax(0, 1fr) auto var(--project-tools-width);
+  grid-template-areas: "primary record tools";
+  column-gap: 0;
 }
 
 .project-row {
@@ -1376,6 +1378,7 @@ kbd {
   align-items: flex-start;
   gap: 9px;
   min-width: 0;
+  padding-right: clamp(14px, 1.6vw, 24px);
 }
 
 .project-row__monogram {
@@ -1456,61 +1459,21 @@ kbd {
   white-space: nowrap;
 }
 
-.project-row__references {
-  grid-area: references;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 2px;
-}
-
-.file-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  max-width: 100%;
-  padding: 1px 0;
-  border: 0;
-  background: transparent;
-  color: var(--text);
-  font-size: 14px;
-  text-align: left;
-  transition: color 130ms ease;
-}
-
-.file-link:hover {
-  color: var(--ink);
-}
-
-.file-link svg {
-  flex: none;
-  color: #9b846b;
-}
-
-.file-link span {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.file-link--more {
-  color: var(--text);
-  font-size: 13.5px;
-}
-
 .project-row__end {
-  grid-area: end;
+  grid-area: tools;
   display: flex;
   align-items: center;
   justify-content: flex-end;
   gap: 2px;
 }
 
+/* 记录按钮右边缘对齐笔记/重点文件分隔线，并随分隔线拖动同步移动 */
 .project-row__record {
+  grid-area: record;
+  justify-self: end;
+  margin-right: calc(var(--details-side-width, 330px) + 12px - var(--project-tools-width));
   height: 30px;
   padding: 0 9px;
-  margin-right: 4px;
   gap: 4px;
   font-size: 14.5px;
 }
@@ -3401,16 +3364,6 @@ kbd {
    响应式
 --------------------------------------------- */
 @media (max-width: 1120px) {
-  .project-row {
-    grid-template-columns:
-      minmax(190px, 0.9fr)
-      minmax(215px, 1.28fr)
-      minmax(125px, 0.7fr)
-      78px
-      86px;
-    column-gap: 14px;
-  }
-
   .welcome__main {
     grid-template-columns: minmax(0, 1.06fr) minmax(350px, 0.94fr);
     gap: 32px;
@@ -3435,32 +3388,14 @@ kbd {
   }
 
   .project-row {
-    grid-template-columns: minmax(0, 1fr) auto;
-    grid-template-areas:
-      "primary end"
-      "references references";
-    row-gap: 5px;
+    grid-template-areas: "primary record tools";
     min-height: 0;
     padding: 9px 6px;
   }
 
-  .project-row__primary {
-    grid-area: primary;
-  }
-
-  .project-row__references {
-    grid-area: references;
-    flex-direction: row;
-    flex-wrap: wrap;
-    gap: 3px 12px;
-    padding-left: 48px;
-  }
-
-  .project-row__end {
-    grid-area: end;
-    align-self: flex-start;
-    padding-top: 1px;
-    gap: 0;
+  /* 窄屏分隔线隐藏，记录按钮回到图标旁 */
+  .project-row__record {
+    margin-right: 4px;
   }
 
   .project-details {
@@ -3691,15 +3626,6 @@ kbd {
 
   .project-row__parent {
     max-width: 120px;
-  }
-
-  .project-row__references {
-    padding-left: 0;
-    gap: 4px 11px;
-  }
-
-  .project-row__end {
-    gap: 0;
   }
 
   .project-row__expander {
